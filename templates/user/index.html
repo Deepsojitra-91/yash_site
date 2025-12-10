@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <link rel="icon" href="/static/logo.png" type="image/png">
+    <link rel="shortcut icon" href="/static/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="/static/logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-blue': '#114373',
+                        'brand-gold': '#d19f28'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-white min-h-screen flex items-center justify-center relative overflow-hidden">
+    <div class="text-center px-6 w-full max-w-lg fade-in-up">
+        <div class="mx-auto mb-8 relative group">
+            <div class="w-32 h-45 md:w-48 md:h-62 mx-auto rounded-3xl shadow-brand-blue/20 overflow-hidden transition-transform duration-300 group-hover:scale-105">
+                <img src="/static/logo.png" alt="Logo" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://placehold.co/400x400/114373/ffffff?text=Logo';">
+            </div>
+        </div>
+
+        <div class="mb-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-brand-blue tracking-tight mb-3">Welcome</h1>
+            <p class="text-slate-500 text-lg md:text-xl font-light max-w-sm mx-auto leading-relaxed">Your secure journey starts here.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 w-full justify-center items-center">
+            <a href="login" class="w-full sm:w-1/2 bg-brand-blue hover:bg-opacity-90 text-white font-medium py-3.5 px-6 rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 text-center">
+                Log In
+            </a>
+
+            <a href="register" class="w-full sm:w-1/2 bg-brand-gold hover:bg-opacity-90 text-white font-medium py-3.5 px-6 rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 text-center">
+                Register
+            </a>
+        </div>
+    </div>
+</body>
+</html>

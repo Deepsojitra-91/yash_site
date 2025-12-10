@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Edit Profile</title>
+    {% include 'user/partials/head.html' %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        .crop-container {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            margin: 0 auto;
+            background: #f1f5f9;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .crop-container img {
+            max-width: 100%;
+            display: block;
+        }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'user/partials/mobile-menu.html' %}
+    {% include 'user/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h2 class="text-2xl font-bold mb-6 mt-10 lg:mt-0">Edit Profile</h2>
+        <div class="bg-white text-slate-900 rounded-xl p-8 max-w-2xl">
+            <form id="editProfileForm" class="space-y-6">
+                <div class="flex flex-col items-center space-y-4">
+                    <div id="currentProfilePreview" class="flex flex-col items-center">
+                        <p class="text-sm font-semibold text-slate-700 mb-3">Current Profile Picture</p>
+                        <div id="editProfileImgContainer" class="w-32 h-32 rounded-full overflow-hidden border-4 border-emerald-400 shadow-lg">
+                            <img id="editProfilePic" class="w-full h-full object-cover hidden">
+                            <div id="editProfilePlaceholder" class="w-full h-full default-profile-icon">
+                                <span id="editProfileInitial">U</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="file" id="editProfilePicture" class="hidden" accept="image/*">
+                    <button type="button" id="changePhotoBtn" class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 font-medium">Choose New Photo</button>
+
+                    <div id="cropperSection" class="hidden w-full space-y-4">
+                        <div class="bg-slate-50 rounded-xl p-4">
+                            <p class="text-sm font-semibold text-slate-700 mb-3 text-center">Adjust Your Photo</p>
+                            <div class="crop-container">
+                                <img id="cropImage" class="hidden">
+                            </div>
+                            <div class="flex justify-center gap-3 mt-4">
+                                <button type="button" id="zoomIn" class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 font-medium">Zoom In</button>
+                                <button type="button" id="zoomOut" class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 font-medium">Zoom Out</button>
+                                <button type="button" id="rotateImage" class="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 font-medium">Rotate</button>
+                            </div>
+                            <div class="flex gap-3 mt-4">
+                                <button type="button" id="cancelCrop" class="flex-1 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">Cancel</button>
+                                <button type="button" id="applyCrop" class="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 font-medium">Apply Crop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-semibold text-sm block mb-2 text-slate-700">Full Name</label>
+                    <input type="text" id="editName" class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none" placeholder="Enter your full name" required>
+                </div>
+
+                <div id="profileUpdateError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                    <p class="text-red-700 text-sm font-medium"></p>
+                </div>
+
+                <div id="profileUpdateSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                    <p class="text-green-700 text-sm font-medium">Profile updated successfully!</p>
+                </div>
+
+                <button type="submit" id="saveProfileBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-semibold">Save Changes</button>
+            </form>
+        </div>
+    </main>
+
+    {% include 'user/partials/toast.html' %}
+    {% include 'user/partials/confirm-modal.html' %}
+    {% include 'user/partials/whatsapp-button.html' %}
+    {% include 'user/partials/scripts.html' %}
+
+    <script>
+        document.getElementById("editName").value = user.full_name || "";
+
+        function displayProfilePicture(base64Image, imgSelector, placeholderSelector, initialSelector) {
+            const img = document.querySelector(imgSelector);
+            const placeholder = document.querySelector(placeholderSelector);
+            const initial = document.querySelector(initialSelector);
+
+            if (base64Image && base64Image.trim() !== '') {
+                img.src = base64Image;
+                img.classList.remove('hidden');
+                if (placeholder) placeholder.classList.add('hidden');
+            } else {
+                const firstLetter = user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U';
+                if (initial) initial.textContent = firstLetter;
+                img.classList.add('hidden');
+                if (placeholder) placeholder.classList.remove('hidden');
+            }
+        }
+
+        displayProfilePicture(user.profile_pic, '#editProfilePic', '#editProfilePlaceholder', '#editProfileInitial');
+
+        let cropper = null;
+        let croppedBase64Image = null;
+
+        document.getElementById("changePhotoBtn").onclick = () => {
+            document.getElementById("editProfilePicture").click();
+        };
+
+        document.getElementById("editProfilePicture").onchange = function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast("error", "Please select an image file (JPG, PNG, etc.)");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("error", "Image size must be less than 5MB");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imageData = e.target.result;
+
+                document.getElementById("currentProfilePreview").classList.add("hidden");
+                document.getElementById("cropperSection").classList.remove("hidden");
+
+                const cropImage = document.getElementById("cropImage");
+                cropImage.src = imageData;
+                cropImage.classList.remove("hidden");
+
+                if (cropper) cropper.destroy();
+
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    background: false,
+                    autoCropArea: 1,
+                    responsive: true
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.getElementById("zoomIn").onclick = () => {
+            if (cropper) cropper.zoom(0.1);
+        };
+
+        document.getElementById("zoomOut").onclick = () => {
+            if (cropper) cropper.zoom(-0.1);
+        };
+
+        document.getElementById("rotateImage").onclick = () => {
+            if (cropper) cropper.rotate(90);
+        };
+
+        document.getElementById("cancelCrop").onclick = () => {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            document.getElementById("cropperSection").classList.add("hidden");
+            document.getElementById("currentProfilePreview").classList.remove("hidden");
+            document.getElementById("editProfilePicture").value = "";
+            croppedBase64Image = null;
+        };
+
+        document.getElementById("applyCrop").onclick = () => {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                width: 300,
+                height: 300,
+                imageSmoothingQuality: 'high'
+            });
+
+            croppedBase64Image = canvas.toDataURL('image/png');
+
+            displayProfilePicture(croppedBase64Image, '#editProfilePic', '#editProfilePlaceholder', '#editProfileInitial');
+
+            document.getElementById("cropperSection").classList.add("hidden");
+            document.getElementById("currentProfilePreview").classList.remove("hidden");
+
+            cropper.destroy();
+            cropper = null;
+
+            const successMsg = document.createElement('div');
+            successMsg.className = 'bg-green-50 border-l-4 border-green-500 p-3 rounded mt-3';
+            successMsg.innerHTML = '<p class="text-green-700 text-sm font-medium">Photo cropped successfully! Click "Save Changes" to update.</p>';
+            document.getElementById("currentProfilePreview").appendChild(successMsg);
+
+            setTimeout(() => successMsg.remove(), 3000);
+        };
+
+        document.getElementById("editProfileForm").onsubmit = async (e) => {
+            e.preventDefault();
+
+            const newName = document.getElementById("editName").value.trim();
+            const errorEl = document.getElementById("profileUpdateError");
+            const successEl = document.getElementById("profileUpdateSuccess");
+            const btn = document.getElementById("saveProfileBtn");
+
+            errorEl.classList.add("hidden");
+            successEl.classList.add("hidden");
+
+            if (!newName) {
+                errorEl.querySelector('p').textContent = "Name cannot be empty";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Saving...";
+
+            try {
+                const profilePicToSave = croppedBase64Image || user.profile_pic;
+
+                const res = await fetch("/api/update-profile", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        mobile: user.mobile,
+                        full_name: newName,
+                        profile_pic: profilePicToSave
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorEl.querySelector('p').textContent = data.detail;
+                    errorEl.classList.remove("hidden");
+                    return;
+                }
+
+                user.full_name = newName;
+                if (profilePicToSave) user.profile_pic = profilePicToSave;
+
+                localStorage.setItem("user", JSON.stringify(user));
+                document.getElementById("sidebarUserName").textContent = newName;
+
+                displayProfilePicture(user.profile_pic, '#profileImg', '#profilePlaceholder', '#profileInitial');
+
+                successEl.classList.remove("hidden");
+
+                setTimeout(() => {
+                    window.location.href = "/dashboard";
+                }, 2000);
+
+            } catch (err) {
+                errorEl.querySelector('p').textContent = "Network error. Please try again.";
+                errorEl.classList.remove("hidden");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Save Changes";
+            }
+        };
+
+    </script>
+</body>
+
+</html>

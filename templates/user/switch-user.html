@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Switch User</title>
+    {% include 'user/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'user/partials/mobile-menu.html' %}
+    {% include 'user/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 min-h-screen">
+        <div class="w-full max-w-xl mx-auto">
+            <div id="accountsList" class="space-y-3 mt-4"></div>
+
+            <p id="noAccountsMessage" class="mt-6 text-center text-slate-200 text-sm hidden">
+                No other accounts found.
+            </p>
+        </div>
+
+        <div id="accountModal" class="fixed inset-0 bg-black bg-opacity-40 z-[9998] hidden items-center justify-center p-4">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+                <h4 class="text-xl font-bold text-slate-900 mb-5 text-center">Account Details</h4>
+
+                <div class="space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                    <div class="flex justify-between">
+                        <span class="font-semibold text-blue-600">ID</span>
+                        <span id="modalIdNumber" class="font-bold text-slate-900"></span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="font-semibold text-blue-600">Current Level</span>
+                        <span id="modalCurrentLevel" class="font-bold text-slate-900"></span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="font-semibold text-blue-600">Upcoming Level</span>
+                        <span id="modalUpcomingLevel" class="font-bold text-slate-900"></span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <button id="modalCloseBtn" class="px-5 py-2 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium">
+                        Close
+                    </button>
+
+                    <button id="modalSwitchBtn" class="px-5 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 font-semibold">
+                        Switch
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include 'user/partials/toast.html' %}
+    {% include 'user/partials/confirm-modal.html' %}
+    {% include 'user/partials/whatsapp-button.html' %}
+    {% include 'user/partials/scripts.html' %}
+
+    <script>
+        const accountsListEl = document.getElementById("accountsList");
+        const noAccountsMessageEl = document.getElementById("noAccountsMessage");
+
+        const accountModal = document.getElementById("accountModal");
+        const modalIdNumber = document.getElementById("modalIdNumber");
+        const modalCurrentLevel = document.getElementById("modalCurrentLevel");
+        const modalUpcomingLevel = document.getElementById("modalUpcomingLevel");
+        const modalCloseBtn = document.getElementById("modalCloseBtn");
+        const modalSwitchBtn = document.getElementById("modalSwitchBtn");
+
+        let selectedAccount = null;
+
+        async function loadAccountsForSwitchUser() {
+            try {
+                const res = await fetch(`/api/accounts/by-mobile?mobile=${encodeURIComponent(user.mobile)}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast("error", data.detail || "Failed to load accounts");
+                    return;
+                }
+
+                const accounts = data.accounts || [];
+
+                if (accounts.length === 0) {
+                    noAccountsMessageEl.classList.remove("hidden");
+                    return;
+                }
+
+                accountsListEl.innerHTML = "";
+                noAccountsMessageEl.classList.add("hidden");
+
+                accounts.forEach(acc => {
+                    const row = document.createElement("button");
+                    row.type = "button";
+                    row.className = "w-full px-4 py-3 rounded-lg bg-white border-2 border-emerald-500 text-slate-900 font-semibold shadow-sm hover:shadow-md transition";
+                    row.innerHTML = `<span class="font-semibold text-slate-800">${acc.id_number || "Not Assigned"}</span>`;
+                    row.onclick = () => openAccountModal(acc);
+                    accountsListEl.appendChild(row);
+                });
+            } catch (err) {
+                console.error("loadAccountsForSwitchUser error:", err);
+                showToast("error", "Something went wrong while loading accounts");
+            }
+        }
+
+        function openAccountModal(acc) {
+            selectedAccount = acc;
+            modalIdNumber.textContent = acc.id_number || "Not Assigned";
+            modalCurrentLevel.textContent = acc.current_level || "-";
+            modalUpcomingLevel.textContent = acc.upcoming_level || "-";
+            accountModal.classList.remove("hidden");
+            accountModal.classList.add("flex");
+        }
+
+        function closeAccountModal() {
+            accountModal.classList.add("hidden");
+            accountModal.classList.remove("flex");
+            selectedAccount = null;
+        }
+
+        modalCloseBtn.onclick = () => closeAccountModal();
+
+        modalSwitchBtn.onclick = async () => {
+            if (!selectedAccount || !selectedAccount.id_number) return;
+
+            const ok = await showConfirm(`Are you sure you want to switch to ID ${selectedAccount.id_number}?`);
+            if (!ok) return;
+
+            try {
+                const res = await fetch(`/api/account-by-id?id_number=${encodeURIComponent(selectedAccount.id_number)}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast("error", data.detail || "Failed to switch account");
+                    return;
+                }
+
+                localStorage.setItem("user", JSON.stringify(data));
+                closeAccountModal();
+                showToast("success", `Switched to ID ${data.id_number || ""}`);
+                window.location.href = "/dashboard";
+            } catch (err) {
+                console.error("switch account error:", err);
+                showToast("error", "Something went wrong while switching");
+            }
+        };
+
+        loadAccountsForSwitchUser();
+    </script>
+</body>
+</html>

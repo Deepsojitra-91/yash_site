@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Add Product</title>
+    {% include 'admin/partials/head.html' %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        .crop-container {
+            width: 100%;
+            max-width: 500px;
+            height: 350px;
+            margin: 0 auto;
+            background: #f1f5f9;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'admin/partials/mobile-menu.html' %}
+    {% include 'admin/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-3xl">
+            <h2 class="text-4xl font-bold mb-6 text-center">Add New Product</h2>
+
+            <div class="bg-white text-slate-900 rounded-xl p-8">
+                <form id="addProductForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-3">Product Image</label>
+                        <div id="imagePreviewSection" class="hidden mb-4">
+                            <p class="text-sm text-slate-600 mb-2">Preview:</p>
+                            <div class="w-48 h-48 border-4 border-purple-400 rounded-xl overflow-hidden">
+                                <img id="productImagePreview" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+                        <div id="cropperSection" class="hidden mb-4">
+                            <div class="crop-container mb-4">
+                                <img id="cropImage" class="hidden">
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <button type="button" id="zoomIn"
+                                    class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">Zoom
+                                    In</button>
+                                <button type="button" id="zoomOut"
+                                    class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">Zoom
+                                    Out</button>
+                                <button type="button" id="rotateImage"
+                                    class="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600">Rotate</button>
+                                <button type="button" id="cancelCrop"
+                                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Cancel</button>
+                                <button type="button" id="applyCrop"
+                                    class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Apply
+                                    Crop</button>
+                            </div>
+                        </div>
+                        <input type="file" id="productImage" accept="image/*" class="hidden">
+                        <button type="button" id="chooseImageBtn"
+                            class="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-300 font-medium">Choose
+                            Product Image</button>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Product Name</label>
+                        <input type="text" id="productName" required
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none"
+                            placeholder="Enter product name">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Price</label>
+                        <input type="number" id="productPrice" required min="0" step="0.01"
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none"
+                            placeholder="Enter product price">
+                    </div>
+
+                    <div id="productError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                        <p class="text-red-700 text-sm font-medium"></p>
+                    </div>
+
+                    <div id="productSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                        <p class="text-green-700 text-sm font-medium">Product added successfully!</p>
+                    </div>
+
+                    <button type="submit" id="submitProductBtn"
+                        class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-lg">
+                        Add Product
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    {% include 'admin/partials/toast.html' %}
+    {% include 'admin/partials/confirm-modal.html' %}
+    {% include 'admin/partials/scripts.html' %}
+
+    <script>
+        let cropper = null;
+        let croppedProductImage = null;
+
+        document.getElementById("chooseImageBtn").onclick = () => {
+            document.getElementById("productImage").click();
+        };
+
+        document.getElementById("productImage").onchange = function () {
+            const file = this.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert("Please select an image file");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                alert("Image size must be less than 5MB");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById("cropperSection").classList.remove("hidden");
+                document.getElementById("imagePreviewSection").classList.add("hidden");
+
+                const cropImage = document.getElementById("cropImage");
+                cropImage.src = e.target.result;
+                cropImage.classList.remove("hidden");
+
+                if (cropper) cropper.destroy();
+
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    background: false,
+                    autoCropArea: 1,
+                    responsive: true
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.getElementById("zoomIn").onclick = () => cropper?.zoom(0.1);
+        document.getElementById("zoomOut").onclick = () => cropper?.zoom(-0.1);
+        document.getElementById("rotateImage").onclick = () => cropper?.rotate(90);
+
+        document.getElementById("cancelCrop").onclick = () => {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            document.getElementById("cropperSection").classList.add("hidden");
+            document.getElementById("productImage").value = "";
+            croppedProductImage = null;
+        };
+
+        document.getElementById("applyCrop").onclick = () => {
+            if (!cropper) return;
+            const canvas = cropper.getCroppedCanvas({
+                width: 400,
+                height: 400,
+                imageSmoothingQuality: 'high'
+            });
+
+            croppedProductImage = canvas.toDataURL('image/png');
+
+            document.getElementById("productImagePreview").src = croppedProductImage;
+            document.getElementById("imagePreviewSection").classList.remove("hidden");
+            document.getElementById("cropperSection").classList.add("hidden");
+
+            cropper.destroy();
+            cropper = null;
+        };
+
+        document.getElementById("addProductForm").onsubmit = async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById("productName").value.trim();
+            const price = document.getElementById("productPrice").value.trim();
+            const errorEl = document.getElementById("productError");
+            const successEl = document.getElementById("productSuccess");
+            const btn = document.getElementById("submitProductBtn");
+
+            errorEl.classList.add("hidden");
+            successEl.classList.add("hidden");
+
+            if (!croppedProductImage) {
+                errorEl.querySelector('p').textContent = "Please upload a product image";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            if (!name || !price) {
+                errorEl.querySelector('p').textContent = "Please fill all fields";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Adding Product...";
+
+            try {
+                const res = await fetch('/api/admin/add-product', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        price: parseFloat(price),
+                        image: croppedProductImage
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorEl.querySelector('p').textContent = data.detail;
+                    errorEl.classList.remove("hidden");
+                    return;
+                }
+
+                successEl.classList.remove("hidden");
+
+                document.getElementById("addProductForm").reset();
+                document.getElementById("imagePreviewSection").classList.add("hidden");
+                croppedProductImage = null;
+
+                setTimeout(() => successEl.classList.add("hidden"), 3000);
+            } catch (err) {
+                errorEl.querySelector('p').textContent = "Network error. Please try again.";
+                errorEl.classList.remove("hidden");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Add Product";
+            }
+        };
+    </script>
+</body>
+
+</html>

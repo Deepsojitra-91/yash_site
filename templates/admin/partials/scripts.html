@@ -1,0 +1,128 @@
+<script>
+    function showToast(type, message) {
+        const container = document.getElementById("toastContainer");
+
+        let borderClass = "";
+        let titleColor = "";
+        let icon = "";
+
+        if (type === "success") {
+            borderClass = "border-green-400";
+            titleColor = "text-green-700";
+            icon = `<svg class='w-5 h-5 text-green-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                    d='M5 13l4 4L19 7'/>
+            </svg>`;
+        } else if (type === "error") {
+            borderClass = "border-red-400";
+            titleColor = "text-red-700";
+            icon = `<svg class='w-5 h-5 text-red-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                    d='M6 18L18 6M6 6l12 12'/>
+            </svg>`;
+        }
+
+        const toast = document.createElement("div");
+        toast.className =
+            `toast-animate-in px-4 py-3 bg-white rounded-xl shadow-lg border ${borderClass} flex items-start gap-3`;
+
+        toast.innerHTML = `
+            <div>${icon}</div>
+            <div class="${titleColor} font-medium">${message}</div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            toast.style.transition = "0.3s";
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    let confirmResolve = null;
+
+    function showConfirm(message) {
+        const modal = document.getElementById("confirmModal");
+        const msg = document.getElementById("confirmMessage");
+
+        msg.textContent = message;
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+
+        return new Promise(resolve => confirmResolve = resolve);
+    }
+
+    document.getElementById("confirmCancelBtn").onclick = () => {
+        document.getElementById("confirmModal").classList.add("hidden");
+        confirmResolve(false);
+    };
+
+    document.getElementById("confirmOkBtn").onclick = () => {
+        document.getElementById("confirmModal").classList.add("hidden");
+        confirmResolve(true);
+    };
+
+    const admin = JSON.parse(localStorage.getItem("admin"));
+    if (!admin || admin.role !== 'admin') {
+        showToast("error", "Unauthorized access. Please login as admin.");
+        window.location.href = "/admin-login";
+    }
+    
+    document.getElementById("adminUsername").textContent = admin.username;
+
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    document.getElementById("mobileMenuBtn").onclick = () => {
+        sidebar.classList.remove("-translate-x-full");
+        overlay.classList.remove("hidden");
+    };
+
+    document.getElementById("closeSidebar").onclick = () => {
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+    };
+
+    overlay.onclick = () => {
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+    };
+
+    document.getElementById("logoutBtn").onclick = async (e) => {
+        e.preventDefault();
+        const ok = await showConfirm("Are you sure you want to logout?");
+        if (ok) {
+            localStorage.removeItem("admin");
+            window.location.href = "/admin-login";
+        }
+    };
+
+    async function refreshNotificationBadge() {
+        try {
+            const badge = document.getElementById("notificationBadge");
+            if (!badge) return; // sidebar not rendered on this page
+
+            const res = await fetch("/api/admin/pending-users");
+            if (!res.ok) return;
+
+            const data = await res.json();
+            const pendingCount = (data.pending_users && data.pending_users.length) || 0;
+
+            if (pendingCount > 0) {
+                badge.textContent = pendingCount;
+                badge.classList.remove("hidden");
+            } else {
+                badge.classList.add("hidden");
+            }
+        } catch (err) {
+            console.error("Error refreshing notification badge:", err);
+        }
+    }
+
+    // Call once on page load + every 30 seconds on EVERY admin page
+    refreshNotificationBadge();
+    setInterval(refreshNotificationBadge, 30000);
+
+</script>

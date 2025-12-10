@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Login</title>
+    {% include 'user/partials/head.html' %}
+    <style>
+        .input-focus {
+            transition: all 0.3s;
+        }
+
+        .input-focus:focus {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
+        <a href="/" class="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 font-medium">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Home
+        </a>
+
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
+        <p class="text-slate-600 mb-8">Sign in to your account</p>
+
+        <div id="apiErrorBox" class="hidden mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-700 font-medium" id="apiErrorText"></p>
+                    <div id="registerSuggestion" class="hidden mt-2">
+                        <a href="register" class="text-sm font-bold text-red-700 underline hover:text-red-600">Create an
+                            account now &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-semibold text-slate-800 mb-2">ID Number</label>
+                <input type="text" id="idNumber" required
+                    class="input-focus w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none"
+                    placeholder="Enter your ID">
+            </div>
+            <div class="relative">
+                <input type="password" id="password" class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-transparent 
+                  border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none" placeholder=" " />
+
+                <!-- Eye Toggle Button -->
+                <button type="button" id="togglePassword"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 
+                     9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </button>
+
+                <label for="password" class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all 
+                  duration-300 transform origin-[0] -translate-y-3 scale-75 
+                  peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 
+                  peer-focus:-translate-y-3 peer-focus:scale-75">
+                    Password
+                </label>
+            </div>
+            <button type="submit" id="submitBtn"
+                class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold py-3 rounded-lg shadow-lg transition-all">
+                Login
+            </button>
+        </form>
+
+        <p class="text-center text-slate-600 mt-8">
+            Don't have an account? <a href="register"
+                class="text-emerald-600 hover:text-emerald-700 font-semibold">Register here</a>
+        </p>
+    </div>
+
+    {% include 'user/partials/whatsapp-button.html' %}
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const errorBox = document.getElementById('apiErrorBox');
+            const errorText = document.getElementById('apiErrorText');
+            const regSugg = document.getElementById('registerSuggestion');
+            const btn = document.getElementById('submitBtn');
+
+            errorBox.classList.add('hidden');
+            regSugg.classList.add('hidden');
+            btn.innerHTML = 'Signing in...';
+            btn.disabled = true;
+
+            const id_number = document.getElementById('idNumber').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_number, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('user', JSON.stringify(data));
+                    window.location.href = 'dashboard';
+                } else {
+                    errorText.textContent = data.detail || 'Login failed';
+                    errorBox.classList.remove('hidden');
+
+                    if (response.status === 404) {
+                        regSugg.classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                errorText.textContent = "Connection error.";
+                errorBox.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = 'Login';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById("togglePassword").addEventListener("click", function () {
+            const passwordField = document.getElementById("password");
+            const eyeIcon = document.getElementById("eyeIcon");
+
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+
+                // change to eye-off icon
+                eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7
+                 a10.06 10.06 0 013.143-4.734M9.88 9.88a3 3 0 104.24 4.24" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 3l18 18" />
+        `;
+            } else {
+                passwordField.type = "password";
+
+                // change back to eye icon
+                eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 
+                     9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        `;
+            }
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,122 @@
+<script>
+    function showToast(type, message) {
+        const container = document.getElementById("toastContainer");
+        if (!container) return;
+
+        let borderClass = "";
+        let titleColor = "";
+        let icon = "";
+
+        if (type === "success") {
+            borderClass = "border-green-400";
+            titleColor = "text-green-700";
+            icon = `<svg class='w-5 h-5 text-green-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                    d='M5 13l4 4L19 7'/>
+            </svg>`;
+        } else {
+            borderClass = "border-red-400";
+            titleColor = "text-red-700";
+            icon = `<svg class='w-5 h-5 text-red-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                    d='M6 18L18 6M6 6l12 12'/>
+            </svg>`;
+        }
+
+        const toast = document.createElement("div");
+        toast.className =
+            `toast-animate-in px-4 py-3 bg-white rounded-xl shadow-lg border ${borderClass} flex items-start gap-3`;
+
+        toast.innerHTML = `
+            <div>${icon}</div>
+            <div class="${titleColor} font-medium">${message}</div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            toast.style.transition = "0.3s";
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    let confirmResolve = null;
+
+    function showConfirm(message) {
+        const modal = document.getElementById("confirmModal");
+        const msg = document.getElementById("confirmMessage");
+        if (!modal || !msg) return Promise.resolve(false);
+
+        msg.textContent = message;
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+
+        return new Promise(resolve => {
+            confirmResolve = resolve;
+        });
+    }
+
+    document.getElementById("confirmCancelBtn").onclick = () => {
+        document.getElementById("confirmModal").classList.add("hidden");
+        if (confirmResolve) confirmResolve(false);
+    };
+
+    document.getElementById("confirmOkBtn").onclick = () => {
+        document.getElementById("confirmModal").classList.add("hidden");
+        if (confirmResolve) confirmResolve(true);
+    };
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || !user.mobile) {
+        showToast("error", "Please login first");
+        setTimeout(() => {
+            window.location.href = "/login";
+        }, 1200);
+    }
+
+    document.getElementById("sidebarUserName").textContent = user.full_name || "User";
+    document.getElementById("userEmail").textContent = user.email || "No email";
+
+    const img = document.getElementById("profileImg");
+    const placeholder = document.getElementById("profilePlaceholder");
+    const initial = document.getElementById("profileInitial");
+
+    if (user.profile_pic && user.profile_pic.trim() !== '') {
+        img.src = user.profile_pic;
+        img.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+    } else {
+        const firstLetter = user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U';
+        initial.textContent = firstLetter;
+    }
+
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    document.getElementById("mobileMenuBtn").onclick = () => {
+        sidebar.classList.remove("-translate-x-full");
+        overlay.classList.remove("hidden");
+    };
+
+    document.getElementById("closeSidebar").onclick = () => {
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+    };
+
+    overlay.onclick = () => {
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+    };
+
+    document.getElementById("logoutBtn").onclick = async (e) => {
+        e.preventDefault();
+        const ok = await showConfirm("Are you sure you want to logout?");
+        if (!ok) return;
+
+        localStorage.removeItem("user");
+        sessionStorage.clear();
+        window.location.href = "/";
+    };
+</script>

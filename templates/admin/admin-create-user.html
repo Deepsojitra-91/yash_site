@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Create New User</title>
+    {% include 'admin/partials/head.html' %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        .admin-crop-container {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            margin: 0 auto;
+            background: #f1f5f9;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'admin/partials/mobile-menu.html' %}
+    {% include 'admin/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h2 class="text-2xl font-bold mb-6 mt-10 lg:mt-0">Create New User (Admin)</h2>
+        <div class="bg-white text-slate-900 rounded-xl p-8 max-w-2xl mx-auto">
+            <p class="text-slate-600 mb-4">Create a new user registration request.</p>
+            
+            <!-- Success Message Box -->
+            <div id="adminCreateSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-4 rounded mb-6">
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <div>
+                        <p class="text-green-700 font-semibold mb-1">User Registration Request Submitted!</p>
+                        <p class="text-green-600 text-sm">The user will appear in the Notifications section for approval. They will receive ID & Password via WhatsApp after approval.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center mb-6">
+                <div id="adminImagePreview"
+                    class="w-32 h-32 rounded-full border-4 border-emerald-400 overflow-hidden mb-4 bg-slate-100 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <input type="file" id="a_profilePicInput" accept="image/*" class="hidden">
+                <button type="button" id="a_uploadBtn"
+                    class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600">Upload Photo</button>
+                <div id="a_cropperSection" class="hidden mt-4 w-full">
+                    <div class="admin-crop-container">
+                        <img id="a_cropImage" class="hidden">
+                    </div>
+                    <div class="flex justify-center gap-3 mt-4">
+                        <button type="button" id="a_zoomIn" class="px-4 py-2 bg-emerald-500 text-white rounded-lg">Zoom +</button>
+                        <button type="button" id="a_zoomOut" class="px-4 py-2 bg-emerald-500 text-white rounded-lg">Zoom -</button>
+                        <button type="button" id="a_rotate" class="px-4 py-2 bg-slate-500 text-white rounded-lg">Rotate</button>
+                        <button type="button" id="a_applyCrop" class="px-4 py-2 bg-green-500 text-white rounded-lg">Apply</button>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="adminCreateForm" class="space-y-4 mt-6">
+                <input id="a_full_name" placeholder="Full Name" class="w-full px-4 py-3 border-2 rounded-lg" required>
+                <input id="a_mobile" maxlength="10" placeholder="Mobile (10 digits)"
+                    class="w-full px-4 py-3 border-2 rounded-lg" required>
+                <input id="a_email" type="email" placeholder="Email (Optional)" class="w-full px-4 py-3 border-2 rounded-lg">
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="a_birth_date" type="date" class="w-full px-4 py-3 border-2 rounded-lg" required>
+                    <select id="a_gender" class="w-full px-4 py-3 border-2 rounded-lg bg-white" required>
+                        <option value="">Gender</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                    </select>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Referral Code (Optional)</label>
+                    <input id="a_referral_code" type="text"
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none"
+                        placeholder="Enter Referral Code (Optional)">
+                </div>
+                <textarea id="a_address" rows="2" placeholder="Address" class="w-full px-4 py-3 border-2 rounded-lg"
+                    required></textarea>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="a_city" placeholder="City" class="px-4 py-3 border-2 rounded-lg" required>
+                    <input id="a_state" placeholder="State" class="px-4 py-3 border-2 rounded-lg" required>
+                </div>
+                <div id="adminCreateError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded text-red-700">
+                </div>
+                <button type="submit" id="adminCreateBtn"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg">Submit User Registration Request</button>
+            </form>
+        </div>
+    </main>
+
+    {% include 'admin/partials/toast.html' %}
+    {% include 'admin/partials/confirm-modal.html' %}
+
+    {% include 'admin/partials/scripts.html' %}
+
+    <script>
+        let a_cropper = null;
+        let a_croppedImage = null;
+
+        // Set max date (10 years ago)
+        const today = new Date();
+        const maxDate = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+        document.getElementById('a_birth_date').max = maxDate.toISOString().split('T')[0];
+
+        document.getElementById("a_uploadBtn").onclick = () => document.getElementById("a_profilePicInput").click();
+        document.getElementById("a_profilePicInput").onchange = function () {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const cropImg = document.getElementById("a_cropImage");
+                cropImg.src = e.target.result;
+                cropImg.classList.remove("hidden");
+                document.getElementById("a_cropperSection").classList.remove("hidden");
+                if (a_cropper) a_cropper.destroy();
+                a_cropper = new Cropper(cropImg, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: "move",
+                    background: false,
+                    autoCropArea: 1,
+                    responsive: true,
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.getElementById("a_zoomIn").onclick = () => a_cropper?.zoom(0.1);
+        document.getElementById("a_zoomOut").onclick = () => a_cropper?.zoom(-0.1);
+        document.getElementById("a_rotate").onclick = () => a_cropper?.rotate(90);
+        document.getElementById("a_applyCrop").onclick = () => {
+            if (!a_cropper) return;
+            const canvas = a_cropper.getCroppedCanvas({
+                width: 300,
+                height: 300,
+                imageSmoothingQuality: "high",
+            });
+            a_croppedImage = canvas.toDataURL("image/png");
+            const prev = document.getElementById("adminImagePreview");
+            prev.innerHTML = `<img src="${a_croppedImage}" class="w-full h-full object-cover">`;
+            document.getElementById("a_cropperSection").classList.add("hidden");
+            a_cropper.destroy();
+            a_cropper = null;
+        };
+
+        document.getElementById("adminCreateForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const err = document.getElementById("adminCreateError");
+            const successBox = document.getElementById("adminCreateSuccess");
+            err.classList.add("hidden");
+            successBox.classList.add("hidden");
+
+            const mobile = document.getElementById("a_mobile").value.trim();
+            if (!/^\d{10}$/.test(mobile)) {
+                err.textContent = "Mobile must be 10 digits";
+                err.classList.remove("hidden");
+                return;
+            }
+
+            const payload = {
+                full_name: document.getElementById("a_full_name").value.trim(),
+                mobile,
+                email: document.getElementById("a_email").value.trim(),
+                birth_date: document.getElementById("a_birth_date").value,
+                gender: document.getElementById("a_gender").value,
+                referral_code: document.getElementById('a_referral_code').value.trim(),
+                address: document.getElementById("a_address").value.trim(),
+                city: document.getElementById("a_city").value.trim(),
+                state: document.getElementById("a_state").value.trim(),
+                profile_pic: a_croppedImage,
+                created_by_admin: true
+            };
+
+            const btn = document.getElementById("adminCreateBtn");
+            btn.disabled = true;
+            btn.textContent = "Submitting...";
+
+            try {
+                const res = await fetch("/api/complete-registration", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    err.textContent = data.detail || data.message || "Error";
+                    err.classList.remove("hidden");
+                } else {
+                    // Show success message
+                    successBox.classList.remove("hidden");
+                    
+                    // Reset form
+                    document.getElementById("adminCreateForm").reset();
+                    a_croppedImage = null;
+                    document.getElementById("adminImagePreview").innerHTML = `<svg class="w-16 h-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`;
+                    
+                    // Scroll to top to show success message
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                    // Auto-hide success message after 10 seconds
+                    setTimeout(() => {
+                        successBox.classList.add("hidden");
+                    }, 10000);
+                }
+            } catch {
+                err.textContent = "Network error";
+                err.classList.remove("hidden");
+            }
+            btn.disabled = false;
+            btn.textContent = "Submit User Registration Request";
+        };
+    </script>
+</body>
+
+</html>

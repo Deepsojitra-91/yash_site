@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Dashboard</title>
+    {% include 'user/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'user/partials/mobile-menu.html' %}
+    {% include 'user/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h1 class="text-3xl font-bold mb-2 mt-10 lg:mt-0">Dashboard</h1>
+        <p class="text-cyan-200 mb-8">Welcome back, <span id="welcomeName">User</span></p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white text-slate-900 rounded-xl p-6 border-l-4 border-emerald-500 transition hover:scale-105">
+                <h3 class="text-sm font-medium text-slate-600 mb-2">ID Number</h3>
+                <p class="text-2xl font-bold" id="dashboardIdNumber">Loading...</p>
+            </div>
+
+            <div class="bg-white text-slate-900 rounded-xl p-6 border-l-4 border-yellow-500 transition hover:scale-105">
+                <h3 class="text-sm text-slate-600 mb-2">Current Level</h3>
+                <p class="text-2xl font-bold" id="currentLevelBox">Loading...</p>
+            </div>
+
+            <div class="bg-white text-slate-900 rounded-xl p-6 border-l-4 border-cyan-500 transition hover:scale-105">
+                <h3 class="text-sm text-slate-600 mb-2">Upcoming Level</h3>
+                <p class="text-2xl font-bold" id="upcomingLevelBox">Loading...</p>
+            </div>
+        </div>
+    </main>
+
+    {% include 'user/partials/toast.html' %}
+    {% include 'user/partials/confirm-modal.html' %}
+    {% include 'user/partials/whatsapp-button.html' %}
+    {% include 'user/partials/scripts.html' %}
+
+    <script>
+        document.getElementById("welcomeName").textContent = user.full_name || "User";
+        document.getElementById("dashboardIdNumber").textContent = user.id_number || "Not Assigned";
+        document.getElementById("currentLevelBox").textContent = user.current_level || "-";
+        document.getElementById("upcomingLevelBox").textContent = user.upcoming_level || "-";
+
+    </script>
+</body>
+</html>

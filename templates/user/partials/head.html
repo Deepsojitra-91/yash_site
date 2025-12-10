@@ -1,0 +1,45 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="icon" href="/static/logo.png" type="image/png">
+<link rel="shortcut icon" href="/static/logo.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/logo.png">
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+    body {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .gradient-bg {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    }
+
+    .default-profile-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    @keyframes toast-slide-in {
+        from {
+            opacity: 0;
+            transform: translateX(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .toast-animate-in {
+        animation: toast-slide-in 0.25s ease-out;
+    }
+</style>

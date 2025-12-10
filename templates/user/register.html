@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Register - Step 1</title>
+    {% include 'user/partials/head.html' %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        .crop-container {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            margin: 0 auto;
+            background: #f1f5f9;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen py-8 px-4">
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
+        <a href="/" class="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-6 font-medium">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Home
+        </a>
+
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">Create Account</h2>
+        <p class="text-slate-600 mb-8">Step 1 of 2: Personal Details</p>
+
+        <form id="registerForm" class="space-y-6">
+
+            <div class="flex flex-col items-center mb-6">
+                <div id="imagePreview"
+                    class="w-32 h-32 rounded-full border-4 border-emerald-400 overflow-hidden mb-4 bg-slate-100 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+
+                <input type="file" id="profilePicInput" accept="image/*" class="hidden">
+                <button type="button" id="uploadBtn"
+                    class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600">Upload Photo</button>
+
+                <div id="cropperSection" class="hidden mt-4 w-full">
+                    <div class="crop-container"><img id="cropImage" class="hidden"></div>
+                    <div class="flex justify-center gap-3 mt-4">
+                        <button type="button" id="zoomIn" class="px-4 py-2 bg-emerald-500 text-white rounded-lg">Zoom
+                            +</button>
+                        <button type="button" id="zoomOut" class="px-4 py-2 bg-emerald-500 text-white rounded-lg">Zoom
+                            -</button>
+                        <button type="button" id="rotate"
+                            class="px-4 py-2 bg-slate-500 text-white rounded-lg">Rotate</button>
+                        <button type="button" id="applyCrop"
+                            class="px-4 py-2 bg-green-500 text-white rounded-lg">Apply</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative">
+                    <input type="text" id="fullName" required
+                        class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-transparent border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                        placeholder=" " />
+                    <label for="fullName"
+                        class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">Full
+                        Name</label>
+                </div>
+
+                <div class="relative">
+                    <input type="tel" id="mobile" maxlength="10" required
+                        class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-transparent border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                        placeholder=" " />
+                    <label for="mobile"
+                        class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">Mobile
+                        Number</label>
+                </div>
+
+                <div class="relative">
+                    <input type="text" id="email" class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-transparent 
+                                border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                        placeholder=" " />
+                    <label for="email" class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500
+                                transition-all duration-300 transform origin-[0]
+                                -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5
+                                peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">
+                        Email (Optional)
+                    </label>
+                </div>
+
+                <div class="relative">
+                    <input type="date" id="dob" required
+                        class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-white border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                        placeholder=" " />
+                    <label for="dob"
+                        class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">Date
+                        of Birth</label>
+                </div>
+
+                <div class="relative">
+                    <select id="gender" required
+                        class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-white border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none appearance-none">
+                        <option value="" disabled selected hidden></option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                    <label for="gender"
+                        class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">Gender</label>
+                </div>
+
+                <div class="relative">
+                    <input type="text" id="referral_code"
+                        class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-transparent border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                        placeholder=" " />
+                    <label for="referral_code"
+                        class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">Referral
+                        Code (Optional)</label>
+                </div>
+            </div>
+
+            <div class="relative mt-4">
+                <textarea id="address" rows="2" required
+                    class="peer block w-full px-4 pt-6 pb-2.5 text-sm text-gray-900 bg-transparent border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                    placeholder=" "></textarea>
+                <label for="address"
+                    class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-3 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">Address</label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div class="relative">
+                    <input type="text" id="city" required
+                        class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-transparent border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                        placeholder=" " />
+                    <label for="city"
+                        class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">City</label>
+                </div>
+
+                <div class="relative">
+                    <input type="text" id="state" required
+                        class="peer block w-full px-4 pt-4 pb-2.5 text-sm text-gray-900 bg-transparent border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none"
+                        placeholder=" " />
+                    <label for="state"
+                        class="absolute left-3 top-2 px-2 bg-white text-sm text-slate-500 transition-all duration-300 transform origin-[0] -translate-y-3 scale-75 peer-placeholder-shown:translate-y-2.5 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75">State</label>
+                </div>
+            </div>
+
+            <div id="errorBox" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                <p class="text-red-700 text-sm font-medium"></p>
+            </div>
+
+            <button type="submit" id="submitBtn"
+                class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold py-3 rounded-lg">
+                Submit Registration
+            </button>
+        </form>
+
+        <p class="text-center text-slate-600 mt-6">
+            Already have an account? <a href="login" class="text-emerald-600 font-semibold">Login here</a>
+        </p>
+    </div>
+
+    {% include 'user/partials/whatsapp-button.html' %}
+
+    <script>
+        // ======================= Auto-Fill Referral & Join Register =======================
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const refInput = document.getElementById('referral_code');
+                const sessionRef = sessionStorage.getItem('registerReferral');
+
+                if (refInput && sessionRef && sessionRef.trim() !== '') {
+                    refInput.value = sessionRef;
+                    refInput.readOnly = true;
+                    sessionStorage.removeItem('registerReferral');
+                }
+
+                const joinData = sessionStorage.getItem('joinAutoFill');
+                if (joinData) {
+                    const user = JSON.parse(joinData);
+
+                    if (document.getElementById('fullName'))
+                        document.getElementById('fullName').value = user.fullName || user.full_name || user.name || "";
+
+                    if (document.getElementById('mobile'))
+                        document.getElementById('mobile').value = user.mobile || user.mobile_number || user.phone || "";
+
+                    if (document.getElementById('email'))
+                        document.getElementById('email').value = user.email || "";
+
+                    if (document.getElementById('dob'))
+                        document.getElementById('dob').value = user.birth_date || "";
+
+                    if (document.getElementById('gender'))
+                        document.getElementById('gender').value = user.gender || "";
+
+                    if (document.getElementById('address'))
+                        document.getElementById('address').value = user.address || "";
+
+                    if (document.getElementById('city'))
+                        document.getElementById('city').value = user.city || "";
+
+                    if (document.getElementById('state'))
+                        document.getElementById('state').value = user.state || "";
+
+                    sessionStorage.removeItem('joinAutoFill');
+                }
+            } catch (err) {
+                console.warn('Auto-fill failed:', err);
+            }
+        });
+
+        // ======================= Profile Picture Cropper Logic =======================
+        let cropper = null;
+        let croppedImage = null;
+
+        const today = new Date();
+        const maxDate = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+        document.getElementById('dob').max = maxDate.toISOString().split('T')[0];
+
+        document.getElementById('uploadBtn').onclick = () =>
+            document.getElementById('profilePicInput').click();
+
+        document.getElementById('profilePicInput').onchange = function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('cropperSection').classList.remove('hidden');
+                const cropImage = document.getElementById('cropImage');
+                cropImage.src = e.target.result;
+                cropImage.classList.remove('hidden');
+
+                if (cropper) cropper.destroy();
+
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    background: false,
+                    autoCropArea: 1,
+                    responsive: true
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.getElementById('zoomIn').onclick = () => cropper?.zoom(0.1);
+        document.getElementById('zoomOut').onclick = () => cropper?.zoom(-0.1);
+        document.getElementById('rotate').onclick = () => cropper?.rotate(90);
+
+        document.getElementById('applyCrop').onclick = () => {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                width: 300,
+                height: 300,
+                imageSmoothingQuality: 'high'
+            });
+
+            croppedImage = canvas.toDataURL('image/png');
+
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `<img src="${croppedImage}" class="w-full h-full object-cover">`;
+
+            document.getElementById('cropperSection').classList.add('hidden');
+            cropper.destroy();
+            cropper = null;
+        };
+
+        // ======================= SUBMIT FORM =======================
+        document.getElementById('registerForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const errorBox = document.getElementById('errorBox');
+            const btn = document.getElementById('submitBtn');
+            errorBox.classList.add('hidden');
+
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            const referralCode = document.getElementById('referral_code').value.trim();
+
+            // Validate referral code
+            if (referralCode !== "") {
+                const refRes = await fetch('/api/validate-referral', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ referral_code: referralCode })
+                });
+
+                const refData = await refRes.json();
+
+                if (!refRes.ok || !refData.valid) {
+                    errorBox.querySelector('p').textContent = refData.message;
+                    errorBox.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'Submit Registration';
+                    return;
+                }
+            }
+
+            const mobile = document.getElementById('mobile').value.trim();
+
+            if (!/^\d{10}$/.test(mobile)) {
+                errorBox.querySelector('p').textContent = "Mobile must be 10 digits";
+                errorBox.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Submit Registration';
+                return;
+            }
+
+            // ✅ CRITICAL FIX: Get join_with_register flag
+            const joinWithRegister = sessionStorage.getItem("joinWithRegister") === "1";
+            console.log("🔍 DEBUG: joinWithRegister flag =", joinWithRegister);
+
+            // Final registration payload
+            const formData = {
+                full_name: document.getElementById('fullName').value.trim(),
+                mobile: mobile,
+                email: document.getElementById('email').value.trim(),
+                birth_date: document.getElementById('dob').value,
+                gender: document.getElementById('gender').value,
+                referral_code: referralCode,
+                address: document.getElementById('address').value.trim(),
+                city: document.getElementById('city').value.trim(),
+                state: document.getElementById('state').value.trim(),
+                profile_pic: croppedImage,
+                join_with_register: joinWithRegister  // ✅ PASS THE FLAG HERE
+            };
+
+            console.log("📤 Sending registration data:", formData);
+
+            // Send direct registration request
+            try {
+                const res = await fetch('/api/complete-registration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // ✅ Clear the join flag after successful registration
+                    sessionStorage.removeItem("joinWithRegister");
+                    window.location.href = '/register-success';
+                } else {
+                    errorBox.querySelector('p').textContent = data.detail;
+                    errorBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorBox.querySelector('p').textContent = "Network error";
+                errorBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Registration';
+            }
+        };
+    </script>
+
+</body>
+
+</html>

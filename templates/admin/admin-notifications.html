@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Notifications - Pending Approvals</title>
+    {% include 'admin/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'admin/partials/mobile-menu.html' %}
+    {% include 'admin/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h2 class="text-2xl font-bold mb-6 mt-10 lg:mt-0">Pending User Approvals</h2>
+
+        <div id="notificationsLoading" class="text-center py-10">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent">
+            </div>
+            <p class="mt-4">Loading pending users...</p>
+        </div>
+
+        <div id="pendingUsersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+        <div id="noPendingUsers" class="hidden bg-white text-slate-900 rounded-xl p-8 text-center">
+            <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="text-xl font-bold mb-2">All Clear!</h3>
+            <p class="text-slate-600">No pending user approvals</p>
+        </div>
+    </main>
+
+    <!-- User Details Modal -->
+    <div id="userDetailsModal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">User Registration Details</h2>
+                <button id="closeUserDetailsModal" class="text-slate-600 hover:text-slate-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-6 mb-6">
+                <table class="w-full" id="userDetailsTable"></table>
+            </div>
+
+            <div class="flex gap-4">
+                <button id="rejectUserBtn"
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold">
+                    Reject User
+                </button>
+                <button id="approveUserBtn"
+                    class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold">
+                    Approve User
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Approval Modal -->
+    <div id="approvalModal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md">
+
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Approve User</h2>
+
+            <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 mb-4">
+                <p class="text-sm text-slate-600 mb-1">Auto-Generated ID Number:</p>
+                <p class="text-2xl font-bold text-purple-600" id="generatedIdNumber">AAVT1</p>
+            </div>
+
+            <div class="bg-slate-50 rounded-lg p-4 mb-4">
+                <p class="text-sm text-slate-600">
+                    Name: <span class="font-bold text-slate-900" id="approvalUserName"></span>
+                </p>
+                <p class="text-sm text-slate-600">
+                    Mobile: <span class="font-bold text-slate-900" id="approvalUserMobile"></span>
+                </p>
+            </div>
+
+            <div class="relative">
+                <input type="password" id="approvalPassword"
+                    class="w-full px-4 pr-10 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none"
+                    placeholder="Enter password for this user">
+
+                <!-- Eye toggle button -->
+                <button type="button" id="toggleApprovalPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500">
+                    <svg id="approvalEyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <!-- Default eye icon -->
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 
+                9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </button>
+            </div>
+
+
+            <p class="text-xs text-slate-500 mt-1">
+                Password must be 8+ chars with uppercase, lowercase, number & special symbol.
+            </p>
+
+
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Current Level</label>
+                <select id="currentLevel"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500">
+                    <option value="-">-</option>
+                    <option value="Bronze">Bronze</option>
+                    <option value="Silver">Silver</option>
+                    <option value="Gold">Gold</option>
+                    <option value="Platinum">Platinum</option>
+                    <option value="Emerald">Emerald</option>
+                    <option value="Topaz">Topaz</option>
+                    <option value="Diamond">Diamond</option>
+                </select>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Upcoming Level</label>
+                <select id="upcomingLevel"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500">
+                    <option value="Bronze">Bronze</option>
+                    <option value="Silver">Silver</option>
+                    <option value="Gold">Gold</option>
+                    <option value="Platinum">Platinum</option>
+                    <option value="Emerald">Emerald</option>
+                    <option value="Topaz">Topaz</option>
+                    <option value="Diamond">Diamond</option>
+                </select>
+            </div>
+
+            <div id="approvalError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded mb-4">
+                <p class="text-red-700 text-sm font-medium"></p>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="cancelApprovalBtn"
+                    class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-lg font-semibold">
+                    Cancel
+                </button>
+                <button id="confirmApprovalBtn"
+                    class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold">
+                    Approve & Send
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Reject User Modal -->
+    <div id="rejectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md">
+
+            <h2 class="text-2xl font-bold text-slate-900 mb-4">Reject User</h2>
+
+            <label class="block text-sm font-bold text-slate-700 mb-2">Reason of Rejection</label>
+
+            <textarea id="rejectReason"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-red-500 outline-none"
+                placeholder="Enter rejection reason..."></textarea>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeRejectModal()"
+                    class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-lg font-semibold">
+                    Cancel
+                </button>
+                <button onclick="submitRejection()"
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold">
+                    Send & Reject
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- WhatsApp Modal -->
+    <div id="whatsappModal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md text-center">
+
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-10 h-10 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967..."></path>
+                </svg>
+            </div>
+
+            <h2 class="text-2xl font-bold text-slate-900 mb-3">User Approved Successfully!</h2>
+            <p class="text-slate-600 mb-6">Send credentials to user via WhatsApp</p>
+
+            <div class="bg-slate-50 rounded-lg p-4 mb-6 text-left">
+                <p class="text-sm text-slate-600 mb-2">Message Preview:</p>
+                <div class="bg-white border border-slate-200 rounded p-3 text-xs font-mono" id="whatsappMessagePreview">
+                </div>
+            </div>
+
+            <a id="sendWhatsAppBtn" href="#" target="_blank"
+                class="block w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold mb-3">
+                Send via WhatsApp
+            </a>
+
+            <button id="closeWhatsAppModal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-lg font-semibold">
+                Close
+            </button>
+
+        </div>
+    </div>
+
+    {% include 'admin/partials/toast.html' %}
+    {% include 'admin/partials/confirm-modal.html' %}
+    {% include 'admin/partials/scripts.html' %}
+
+    <!-- JS Script -->
+    <script>
+        /* ------------- VARIABLES ------------- */
+        let currentUserId = null;
+        let currentUserData = null;
+        let rejectUserId = null;
+
+        /* ------------- LOAD PENDING USERS ------------- */
+        async function loadPendingUsers() {
+            const grid = document.getElementById("pendingUsersGrid");
+            const loading = document.getElementById("notificationsLoading");
+            const noPending = document.getElementById("noPendingUsers");
+
+            loading.classList.remove("hidden");
+            grid.innerHTML = "";
+            noPending.classList.add("hidden");
+
+            try {
+                const res = await fetch('/api/admin/pending-users');
+                const data = await res.json();
+
+                loading.classList.add("hidden");
+
+                if (!data.pending_users || data.pending_users.length === 0) {
+                    noPending.classList.remove("hidden");
+                    return;
+                }
+
+                data.pending_users.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+                data.pending_users.forEach(user => {
+                    const date = new Date(user.created_at).toLocaleDateString(
+                        'en-IN',
+                        {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            timeZone: 'UTC'
+                        }
+                    );
+
+                    const card = document.createElement("div");
+                    card.className =
+                        "bg-white rounded-xl overflow-hidden shadow-lg cursor-pointer hover:shadow-2xl transition-all";
+
+                    card.onclick = () => showUserDetails(user);
+
+                    card.innerHTML = `
+                        <div class="p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
+                                    ${user.profile_pic
+                            ? `<img src="${user.profile_pic}" class="w-full h-full rounded-full object-cover">`
+                            : `<span class="text-2xl font-bold text-purple-600">${user.full_name.charAt(0).toUpperCase()}</span>`
+                        }
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="font-bold text-lg text-slate-900">${user.full_name}</h3>
+                                    <p class="text-sm text-slate-600">${user.mobile}</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <p class="text-xs text-slate-600">Registration Date</p>
+                                <p class="text-sm font-semibold text-slate-900">${date}</p>
+                            </div>
+
+                            <div class="mt-4 flex gap-2">
+                                <button onclick="event.stopPropagation(); rejectUser('${user._id}')"
+                                        class="flex-1 bg-red-500 text-white py-2 rounded-lg text-sm hover:bg-red-600">
+                                    Reject
+                                </button>
+                                <button onclick="event.stopPropagation(); openApprovalModal('${user._id}', '${user.full_name}', '${user.mobile}')"
+                                        class="flex-1 bg-green-500 text-white py-2 rounded-lg text-sm hover:bg-green-600">
+                                    Approve
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                loading.classList.add("hidden");
+                console.error("Error loading pending users:", err);
+            }
+        }
+
+        /* ------------- REJECT USER MODAL ------------- */
+        function rejectUser(userId) {
+            rejectUserId = userId;
+            document.getElementById("rejectModal").classList.remove("hidden");
+        }
+
+        function closeRejectModal() {
+            document.getElementById("rejectModal").classList.add("hidden");
+            document.getElementById("rejectReason").value = "";
+        }
+
+        async function submitRejection() {
+            const reason = document.getElementById("rejectReason").value.trim();
+
+            // Show toast instead of alert
+            if (!reason) {
+                showToast("error", "Please enter a rejection reason");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/reject-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: rejectUserId, reason })
+                });
+
+                const data = await res.json();
+
+                // Handle server error with toast
+                if (!res.ok) {
+                    showToast("error", data.detail || "Failed to reject user");
+                    return;
+                }
+
+                // Success notification
+                showToast("success", "User rejected successfully");
+
+                // Open WhatsApp message
+                window.open(data.whatsapp_url, "_blank");
+
+                // Close modal + refresh UI
+                closeRejectModal();
+                loadPendingUsers();
+                loadDashboardStats();
+
+            } catch (err) {
+                // Network error toast
+                showToast("error", "Network error. Please try again.");
+            }
+        }
+
+
+        function showUserDetails(user) {
+            currentUserData = user;
+
+            const registrationDate = new Date(user.created_at).toLocaleDateString(
+                'en-IN',
+                {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    timeZone: 'UTC'
+                }
+            );
+
+            const table = document.getElementById("userDetailsTable");
+            const fields = {
+                "Full Name": user.full_name,
+                "Mobile": user.mobile,
+                "Email": user.email || "-",
+                "Date of Birth": user.birth_date,
+                "Gender": user.gender,
+                "Address": user.address,
+                "City": user.city,
+                "State": user.state,
+                "Registration Date": registrationDate
+            };
+
+            table.innerHTML = Object.entries(fields)
+                .map(([k, v]) => `
+                    <tr class="border-b border-slate-200">
+                        <td class="py-3 pr-4 font-semibold text-slate-700 w-1/3">${k}</td>
+                        <td class="py-3 text-slate-900">${v}</td>
+                    </tr>
+                `)
+                .join("");
+
+            document.getElementById("userDetailsModal").classList.remove("hidden");
+        }
+
+        document.getElementById("closeUserDetailsModal").onclick =
+            () => document.getElementById("userDetailsModal").classList.add("hidden");
+
+        document.getElementById("approveUserBtn").onclick = () => {
+            if (currentUserData) {
+                document.getElementById("userDetailsModal").classList.add("hidden");
+                openApprovalModal(currentUserData._id, currentUserData.full_name, currentUserData.mobile);
+            }
+        };
+
+        document.getElementById("rejectUserBtn").onclick = () => {
+            if (currentUserData) {
+                document.getElementById("userDetailsModal").classList.add("hidden");
+                rejectUser(currentUserData._id);
+            }
+        };
+
+        /* ------------- APPROVAL MODAL ------------- */
+        async function openApprovalModal(userId, fullName, mobile) {
+            const res = await fetch(`/api/admin/user-details/${userId}`);
+            const data = await res.json();
+
+            currentUserId = userId;
+
+            document.getElementById("generatedIdNumber").textContent = data.user.id_number_preview;
+            document.getElementById("approvalUserName").textContent = fullName;
+            document.getElementById("approvalUserMobile").textContent = mobile;
+
+            document.getElementById("approvalModal").classList.remove("hidden");
+        }
+
+        document.getElementById("cancelApprovalBtn").onclick =
+            () => document.getElementById("approvalModal").classList.add("hidden");
+
+        document.getElementById("confirmApprovalBtn").onclick = async () => {
+            const password = document.getElementById("approvalPassword").value.trim();
+            const errorEl = document.getElementById("approvalError");
+            const btn = document.getElementById("confirmApprovalBtn");
+
+            errorEl.classList.add("hidden");
+
+            // STRONG PASSWORD CHECK (SAME AS BACKEND)
+            const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$/;
+
+            if (!strongRegex.test(password)) {
+                errorEl.querySelector('p').textContent =
+                    "Password must be 8+ chars and include uppercase, lowercase, number & special symbol.";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+
+            const referralCode = document.getElementById("referral_code")?.value?.trim() || "";
+
+            if (referralCode !== "") {
+                const refRes = await fetch('/api/validate-referral', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ referral_code: referralCode })
+                });
+
+                const refData = await refRes.json();
+
+                if (!refRes.ok || !refData.valid) {
+                    errorEl.querySelector('p').textContent = refData.message;
+                    errorEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = "Approve User";
+                    return;
+                }
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Approving.";
+
+            try {
+                const res = await fetch('/api/admin/approve-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        password,
+                        current_level: document.getElementById("currentLevel").value,
+                        upcoming_level: document.getElementById("upcomingLevel").value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorEl.querySelector("p").textContent = data.detail;
+                    errorEl.classList.remove("hidden");
+                    return;
+                }
+
+                document.getElementById("approvalModal").classList.add("hidden");
+
+                const message =
+                    `Welcome to One Trust Family!
+                Your ID: ${data.id_number}
+                Your Password: ${password}
+                Thank you!`;
+
+                document.getElementById("whatsappMessagePreview").textContent = message;
+                document.getElementById("sendWhatsAppBtn").href = data.whatsapp_url;
+
+                document.getElementById("whatsappModal").classList.remove("hidden");
+
+                loadPendingUsers();
+                loadDashboardStats();
+
+            } catch {
+                errorEl.querySelector("p").textContent = "Network error. Please try again.";
+                errorEl.classList.remove("hidden");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Approve & Send";
+            }
+        };
+
+        document.getElementById("closeWhatsAppModal").onclick =
+            () => document.getElementById("whatsappModal").classList.add("hidden");
+
+        /* ------------- DASHBOARD BADGE UPDATE ------------- */
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch('/api/admin/pending-users');
+                const data = await res.json();
+
+                const count = data.pending_users?.length || 0;
+                const badge = document.getElementById("notificationBadge");
+
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.remove("hidden");
+                } else {
+                    badge.classList.add("hidden");
+                }
+            } catch (err) {
+                console.error("Error loading stats:", err);
+            }
+        }
+
+        /* ------------- INITIALIZE ------------- */
+        loadPendingUsers();
+        loadDashboardStats();
+
+        setInterval(() => {
+            loadPendingUsers();
+            loadDashboardStats();
+        }, 30000);
+
+        /* -------- PASSWORD SHOW/HIDE FOR APPROVAL MODAL -------- */
+        const approvalPasswordField = document.getElementById("approvalPassword");
+        const approvalToggleBtn = document.getElementById("toggleApprovalPassword");
+        const approvalEyeIcon = document.getElementById("approvalEyeIcon");
+
+        if (approvalPasswordField && approvalToggleBtn && approvalEyeIcon) {
+            approvalToggleBtn.addEventListener("click", function () {
+                if (approvalPasswordField.type === "password") {
+                    approvalPasswordField.type = "text";
+
+                    approvalEyeIcon.innerHTML = `
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7
+                    a10.06 10.06 0 013.143-4.734M9.88 9.88a3 3 0 104.24 4.24" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 3l18 18" />
+            `;
+                } else {
+                    approvalPasswordField.type = "password";
+
+                    approvalEyeIcon.innerHTML = `
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 
+                    9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            `;
+                }
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>

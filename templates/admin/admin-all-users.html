@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>All Users</title>
+    {% include 'admin/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'admin/partials/mobile-menu.html' %}
+    {% include 'admin/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h2 class="text-2xl font-bold mb-6 mt-10 lg:mt-0">All Users</h2>
+        <div id="allUsersLoading" class="text-center py-10">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent">
+            </div>
+            <p class="mt-4">Loading all users...</p>
+        </div>
+
+        <div class="bg-white text-slate-900 rounded-xl p-6 overflow-x-auto hidden" id="allUsersTableWrapper">
+            <div class="w-full flex justify-between items-center mb-4 h-12 space-x-4">
+                <!-- Global Search -->
+                <div class="flex items-center space-x-2">
+                    <input id="globalSearch" type="text" placeholder="Search by name, mobile, ID..."
+                        class="border border-slate-400 px-3 py-2 rounded w-64" />
+                    <button id="globalSearchBtn"
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition">
+                        Search
+                    </button>
+
+                    <!-- ✅ NEW REFRESH BUTTON -->
+                    <button id="refreshBtn"
+                        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center gap-2 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+
+                <!-- Right side filters -->
+                <div class="flex items-center space-x-4">
+                    <!-- Status Filter -->
+                    <div class="flex items-center">
+                        <label class="font-semibold mr-2">Status:</label>
+                        <select id="statusFilter" class="border border-slate-400 px-3 py-2 rounded">
+                            <option value="All">All</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+
+                    <!-- Mobile Frequency Filter -->
+                    <div class="flex items-center">
+                        <label class="font-semibold mr-2">Mobile:</label>
+                        <select id="mobileSort" class="border border-slate-400 px-3 py-2 rounded">
+                            <option value="none">Default</option>
+                            <option value="high">High to Low</option>
+                            <option value="low">Low to High</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <table class="min-w-full border-2 border-black text-sm border-collapse" id="allUsersTable"></table>
+            <div id="paginationControls" class="flex justify-end space-x-2 mt-4"></div>
+        </div>
+    </main>
+
+    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl max-w-3xl w-full max-h-[80vh] overflow-y-auto p-6 text-slate-900 relative">
+            <button id="closeUserModal" class="absolute top-3 right-3 text-slate-500 hover:text-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <h3 class="text-xl font-semibold mb-4">User Details</h3>
+            <div id="userDetailsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"></div>
+        </div>
+    </div>
+
+    {% include 'admin/partials/toast.html' %}
+    {% include 'admin/partials/confirm-modal.html' %}
+    {% include 'admin/partials/scripts.html' %}
+
+    <!-- Profile Picture Modal -->
+    <div id="profilePicModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full relative">
+
+            <button id="closeProfilePicModal" class="absolute top-3 right-3 text-slate-500 hover:text-slate-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <h3 class="text-lg font-semibold text-slate-900 mb-4 text-center">Profile Picture</h3>
+
+            <div class="w-full flex justify-center">
+                <img id="profilePicImage" src="" class="w-48 h-48 rounded-full object-cover border-4 border-purple-400">
+            </div>
+
+        </div>
+    </div>
+
+
+    <script>
+        const loading = document.getElementById("allUsersLoading");
+        const wrapper = document.getElementById("allUsersTableWrapper");
+        const table = document.getElementById("allUsersTable");
+
+        const userModal = document.getElementById("userModal");
+        const closeUserModalBtn = document.getElementById("closeUserModal");
+        const userDetailsGrid = document.getElementById("userDetailsGrid");
+
+        let currentPage = 1;
+        let totalPages = 1;
+        const pageSize = 10;
+
+        function formatValue(val) {
+            if (val === null || val === undefined) return "-";
+            if (Array.isArray(val)) return val.join(", ");
+            if (typeof val === "object") {
+                try { return JSON.stringify(val); } catch { return String(val); }
+            }
+            return val;
+        }
+
+        // ✅ OPEN PROFILE PIC MODAL (Keep your existing modal functionality)
+        table.addEventListener("click", (e) => {
+            const btn = e.target.closest(".view-profile-btn");
+            if (!btn) return;
+
+            const imgSrc = btn.getAttribute("data-img") || "";
+
+            if (!imgSrc) {
+                showToast("error", "This user has no profile picture");
+                return;
+            }
+
+            document.getElementById("profilePicImage").src = imgSrc;
+            document.getElementById("profilePicModal").classList.remove("hidden");
+        });
+
+        // CLOSE MODAL
+        document.getElementById("closeProfilePicModal").onclick = () => {
+            document.getElementById("profilePicModal").classList.add("hidden");
+        };
+
+        function openUserModal(user) {
+            userDetailsGrid.innerHTML = "";
+
+            const allowedFields = [
+                "full_name", "birth_date", "email", "gender", "id_number", "mobile",
+                "plain_password", "referral_code", "current_level", "upcoming_level",
+                "address", "city", "state"
+            ];
+
+            allowedFields.forEach(key => {
+                const value = formatValue(user[key]);
+                userDetailsGrid.innerHTML += `
+                <div class="border border-slate-300 rounded-lg p-4 flex justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div class="font-semibold text-blue-700 text-sm">${key.replace(/_/g, " ").toUpperCase()}</div>
+                    <div class="text-slate-900 text-right font-medium">${value}</div>
+                </div>
+            `;
+            });
+
+            userModal.classList.remove("hidden");
+        }
+
+        closeUserModalBtn.addEventListener("click", () => userModal.classList.add("hidden"));
+        userModal.addEventListener("click", (e) => {
+            if (e.target === userModal) userModal.classList.add("hidden");
+        });
+
+        // ✅ MODIFIED: Added forceRefresh parameter
+        async function loadUsers(page = 1, forceRefresh = false) {
+            currentPage = page;
+
+            loading.classList.remove("hidden");
+            wrapper.classList.add("hidden");
+
+            try {
+                const status = document.getElementById("statusFilter").value;
+                const mobileSort = document.getElementById("mobileSort").value;
+                const search = document.getElementById("globalSearch").value.trim();
+
+                // ✅ Add timestamp to force cache bypass when refreshing
+                const timestamp = forceRefresh ? `&t=${Date.now()}` : '';
+
+                const res = await fetch(`/api/admin/users?page=${page}&limit=${pageSize}&status=${status}&mobile_sort=${mobileSort}&search=${search}${timestamp}`);
+                const data = await res.json();
+
+                const users = data.users || [];
+                totalPages = data.total_pages || 1;
+
+                renderTable(users);
+                renderPagination(currentPage, totalPages);
+
+            } catch (err) {
+                console.error("Error loading users:", err);
+                showToast("error", "Failed to load users");
+            } finally {
+                loading.classList.add("hidden");
+                wrapper.classList.remove("hidden");
+            }
+        }
+
+        // ✅ IMPROVED: Added profile picture column with fallback
+        function renderTable(users) {
+            table.innerHTML = `
+            <tr class="bg-slate-200 font-semibold">
+                <th class="border border-black px-3 py-2">No</th>
+                <th class="border border-black px-3 py-2">Profile</th>
+                <th class="border border-black px-3 py-2">ID Number</th>
+                <th class="border border-black px-3 py-2">Mobile</th>
+                <th class="border border-black px-3 py-2">Full Name</th>
+                <th class="border border-black px-3 py-2">Current Level</th>
+                <th class="border border-black px-3 py-2">Upcoming Level</th>
+                <th class="border border-black px-3 py-2">Password</th>
+                <th class="border border-black px-3 py-2">Status</th>
+                <th class="border border-black px-3 py-2">View Details</th>
+            </tr>
+        `;
+
+            users.forEach((u, index) => {
+                // ✅ Profile picture logic with fallback to initials
+                let profilePicHtml = '';
+                if (u.profile_pic && u.profile_pic.trim() !== '') {
+                    profilePicHtml = `
+                    <button class="view-profile-btn" data-img="${u.profile_pic}">
+                        <img src="${u.profile_pic}" 
+                             class="w-10 h-10 rounded-full object-cover border-2 border-emerald-400 cursor-pointer hover:border-emerald-600 transition"
+                             alt="${u.full_name}"
+                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-lg\\'>${u.full_name ? u.full_name.charAt(0).toUpperCase() : 'U'}</div>';">
+                    </button>
+                `;
+                } else {
+                    const firstLetter = u.full_name ? u.full_name.charAt(0).toUpperCase() : 'U';
+                    profilePicHtml = `
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white font-bold text-lg">
+                        ${firstLetter}
+                    </div>
+                `;
+                }
+
+                table.innerHTML += `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="border border-black px-3 py-2">${u.approval_serial || '-'}</td>
+                    <td class="border border-black px-3 py-2">
+                        <div class="flex justify-center">${profilePicHtml}</div>
+                    </td>
+                    <td class="border border-black px-3 py-2">${u.id_number || '-'}</td>
+                    <td class="border border-black px-3 py-2">${u.mobile || '-'}</td>
+                    <td class="border border-black px-3 py-2">${u.full_name || '-'}</td>
+                    <td class="border border-black px-3 py-2">${u.current_level || '-'}</td>
+                    <td class="border border-black px-3 py-2">${u.upcoming_level || '-'}</td>
+                    <td class="border border-black px-3 py-2">${u.real_password || '-'}</td>
+                    <td class="border border-black px-3 py-2">
+                        <span class="px-2 py-1 rounded text-xs font-semibold ${u.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                        u.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                    }">
+                            ${u.status || '-'}
+                        </span>
+                    </td>
+                    <td class="border border-black px-3 py-2 text-center">
+                        <button class="view-data-btn p-2 bg-blue-100 rounded-full hover:bg-blue-200 transition" 
+                                data-id="${u._id}"
+                                title="View full details">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 3C5.45455 3 1.63636 6.04545 0 10C1.63636 13.9545 5.45455 17 10 17C14.5455 17 18.3636 13.9545 20 10C18.3636 6.04545 14.5455 3 10 3ZM10 15C7.23864 15 5 12.7614 5 10C5 7.23864 7.23864 5 10 5C12.7614 5 15 7.23864 15 10C15 12.7614 12.7614 15 10 15ZM10 7C8.34318 7 7 8.34318 7 10C7 11.6568 8.34318 13 10 13C11.6568 13 13 11.6568 13 10C13 8.34318 11.6568 7 10 7Z"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            });
+        }
+
+        function renderPagination(page, total) {
+            const container = document.getElementById("paginationControls");
+            container.innerHTML = "";
+
+            // Previous button
+            container.innerHTML += `
+            <button class="px-3 py-1 border rounded hover:bg-slate-100 transition disabled:opacity-50 disabled:cursor-not-allowed" 
+                    onclick="loadUsers(${page - 1})" 
+                    ${page === 1 ? "disabled" : ""}>
+                Prev
+            </button>
+        `;
+
+            // Page numbers (show max 7 pages)
+            let startPage = Math.max(1, page - 3);
+            let endPage = Math.min(total, startPage + 6);
+
+            if (endPage - startPage < 6) {
+                startPage = Math.max(1, endPage - 6);
+            }
+
+            if (startPage > 1) {
+                container.innerHTML += `
+                <button class="px-3 py-1 border rounded hover:bg-slate-100" onclick="loadUsers(1)">1</button>
+            `;
+                if (startPage > 2) {
+                    container.innerHTML += `<span class="px-2">...</span>`;
+                }
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
+                container.innerHTML += `
+                <button class="px-3 py-1 border rounded transition ${p === page ? 'bg-blue-500 text-white' : 'hover:bg-slate-100'}" 
+                        onclick="loadUsers(${p})">
+                    ${p}
+                </button>
+            `;
+            }
+
+            if (endPage < total) {
+                if (endPage < total - 1) {
+                    container.innerHTML += `<span class="px-2">...</span>`;
+                }
+                container.innerHTML += `
+                <button class="px-3 py-1 border rounded hover:bg-slate-100" onclick="loadUsers(${total})">${total}</button>
+            `;
+            }
+
+            // Next button
+            container.innerHTML += `
+            <button class="px-3 py-1 border rounded hover:bg-slate-100 transition disabled:opacity-50 disabled:cursor-not-allowed" 
+                    onclick="loadUsers(${page + 1})" 
+                    ${page === total ? "disabled" : ""}>
+                Next
+            </button>
+        `;
+        }
+
+        // View user details
+        table.addEventListener("click", async (e) => {
+            const btn = e.target.closest(".view-data-btn");
+            if (!btn) return;
+
+            const userId = btn.getAttribute("data-id");
+
+            try {
+                const res = await fetch(`/api/admin/user-details/${userId}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast("error", data.detail || "Error fetching user details");
+                    return;
+                }
+
+                openUserModal(data.user);
+            } catch (err) {
+                console.error("Error loading user details:", err);
+                showToast("error", "Failed to load user details");
+            }
+        });
+
+        // ✅ Event listeners for filters
+        document.getElementById("globalSearchBtn").addEventListener("click", () => loadUsers(1));
+        document.getElementById("globalSearch").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") loadUsers(1);
+        });
+        document.getElementById("statusFilter").addEventListener("change", () => loadUsers(1));
+        document.getElementById("mobileSort").addEventListener("change", () => loadUsers(1));
+
+        // ✅ NEW: Refresh button event listener
+        document.getElementById("refreshBtn").addEventListener("click", () => {
+            showToast("success", "Refreshing user data...");
+            loadUsers(currentPage, true); // Force refresh with latest data
+        });
+
+        // ✅ Initial load
+        loadUsers();
+    </script>
+
+
+</body>
+
+</html>

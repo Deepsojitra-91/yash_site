@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Create New Account</title>
+    {% include 'user/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'user/partials/mobile-menu.html' %}
+    {% include 'user/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h2 class="text-3xl font-bold mb-6 mt-10 lg:mt-0">Create New Account</h2>
+
+        <div class="bg-white text-slate-900 rounded-xl p-8 max-w-md mx-auto space-y-6">
+            <button id="newRegisterBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-4 rounded-xl font-semibold text-lg">
+                New Register
+            </button>
+            <button id="joinRegisterBtn" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white py-4 rounded-xl font-semibold text-lg">
+                Join With Register
+            </button>
+        </div>
+    </main>
+
+    {% include 'user/partials/toast.html' %}
+    {% include 'user/partials/confirm-modal.html' %}
+    {% include 'user/partials/whatsapp-button.html' %}
+    {% include 'user/partials/scripts.html' %}
+
+    <script>
+        document.getElementById('newRegisterBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            sessionStorage.removeItem("joinWithRegister");
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const id = user.id_number;
+                if (id) sessionStorage.setItem('registerReferral', id);
+            } catch (err) {}
+            window.location.href = '/register';
+        });
+
+        document.getElementById('joinRegisterBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            sessionStorage.setItem("joinWithRegister", "1");
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                sessionStorage.setItem('joinAutoFill', JSON.stringify(user));
+            } catch (err) {}
+            window.location.href = "/register";
+        });
+    </script>
+</body>
+</html>

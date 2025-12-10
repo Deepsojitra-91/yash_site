@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Change User Level</title>
+    {% include 'admin/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'admin/partials/mobile-menu.html' %}
+    {% include 'admin/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-xl">
+            <h1 class="text-4xl font-bold mb-6 text-center">Change User Level</h1>
+
+            <div class="bg-white text-slate-900 p-6 rounded-xl">
+                <!-- SEARCH USER -->
+                <label class="font-semibold text-sm">Enter User ID Number</label>
+                <div class="flex gap-2 mt-2 mb-6">
+                    <input id="searchIdInput" type="text"
+                        class="flex-1 px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none"
+                        placeholder="Enter ID Number">
+
+                    <button id="searchBtn" class="px-5 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        Search
+                    </button>
+                </div>
+
+                <!-- SEARCH ERROR -->
+                <div id="searchError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded mb-4">
+                    <p class="text-red-700 text-sm font-medium"></p>
+                </div>
+
+                <!-- LEVEL SECTION -->
+                <div id="levelSection" class="hidden">
+
+                    <!-- CURRENT LEVEL -->
+                    <label class="font-semibold text-sm">Current Level</label>
+                    <select id="currentLevel"
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none mt-1 mb-4">
+                        <option value="-">-</option>
+                        <option>Bronze</option>
+                        <option>Silver</option>
+                        <option>Gold</option>
+                        <option>Platinum</option>
+                        <option>Emerald</option>
+                        <option>Topaz</option>
+                        <option>Diamond</option>
+                    </select>
+
+                    <!-- UPCOMING LEVEL -->
+                    <label class="font-semibold text-sm">Upcoming Level</label>
+                    <select id="upcomingLevel"
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none mt-1 mb-4">
+                        <option>Bronze</option>
+                        <option>Silver</option>
+                        <option>Gold</option>
+                        <option>Platinum</option>
+                        <option>Emerald</option>
+                        <option>Topaz</option>
+                        <option>Diamond</option>
+                    </select>
+
+                    <button id="saveLevelBtn"
+                        class="w-full bg-green-600 text-white mt-2 py-3 rounded-lg hover:bg-green-700 font-semibold">
+                        Save Changes
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast system must be loaded BEFORE scripts -->
+    {% include 'admin/partials/toast.html' %}
+    {% include 'admin/partials/scripts.html' %}
+
+    <script>
+        let selectedUserId = null;
+
+        /* -------------------- SEARCH USER -------------------- */
+        document.getElementById("searchBtn").onclick = async () => {
+            const idNumber = document.getElementById("searchIdInput").value.trim();
+            const errorEl = document.getElementById("searchError");
+
+            errorEl.classList.add("hidden");
+
+            if (!idNumber) {
+                errorEl.querySelector("p").textContent = "Enter a valid ID Number";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            const res = await fetch(`/api/admin/user-by-id?id_number=${idNumber}`, {
+                method: "GET",
+                credentials: "include"
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                errorEl.querySelector("p").textContent = data.detail;
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            selectedUserId = idNumber;
+
+            document.getElementById("currentLevel").value = data.current_level || "-";
+            document.getElementById("upcomingLevel").value = data.upcoming_level || "Bronze";
+
+            document.getElementById("levelSection").classList.remove("hidden");
+        };
+
+        /* -------------------- SAVE LEVEL -------------------- */
+        document.getElementById("saveLevelBtn").onclick = async () => {
+            const current = document.getElementById("currentLevel").value;
+            const upcoming = document.getElementById("upcomingLevel").value;
+
+            const res = await fetch("/api/admin/update-user-level", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id_number: selectedUserId,
+                    current_level: current,
+                    upcoming_level: upcoming
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showToast("error", data.detail);
+                return;
+            }
+
+            showToast("success", "User level updated successfully!");
+        };
+    </script>
+
+</body>
+
+</html>

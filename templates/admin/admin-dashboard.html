@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Admin Dashboard</title>
+    {% include 'admin/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'admin/partials/mobile-menu.html' %}
+    {% include 'admin/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h1 class="text-3xl md:text-4xl font-bold mb-2 mt-10 lg:mt-0">Admin Dashboard</h1>
+        <p class="text-purple-200 mb-8">Manage users and products efficiently</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+                class="bg-white text-slate-900 rounded-xl p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+                <h3 class="text-sm font-medium text-slate-600 mb-2">Total Users</h3>
+                <p class="text-3xl font-bold" id="totalUsers">0</p>
+            </div>
+
+            <div
+                class="bg-white text-slate-900 rounded-xl p-6 border-l-4 border-indigo-500 hover:shadow-lg transition-shadow">
+                <h3 class="text-sm font-medium text-slate-600 mb-2">Total Products</h3>
+                <p class="text-3xl font-bold" id="totalProducts">0</p>
+            </div>
+
+            <div
+                class="bg-white text-slate-900 rounded-xl p-6 border-l-4 border-cyan-500 hover:shadow-lg transition-shadow">
+                <h3 class="text-sm font-medium text-slate-600 mb-2">Pending Approvals</h3>
+                <p class="text-3xl font-bold" id="pendingCount">0</p>
+            </div>
+        </div>
+    </main>
+
+    {% include 'admin/partials/toast.html' %}
+    {% include 'admin/partials/confirm-modal.html' %}
+    {% include 'admin/partials/scripts.html' %}
+
+    <script>
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch("/api/admin/stats");
+                if (!res.ok) {
+                    throw new Error("Stats API failed");
+                }
+                const data = await res.json();
+
+                const totalUsers = data.total_users || 0;
+                const totalProducts = data.total_products || 0;
+                const pendingUsers = data.pending_users || 0;
+
+                // Update the 3 cards
+                document.getElementById("totalUsers").textContent = totalUsers;
+                document.getElementById("totalProducts").textContent = totalProducts;
+                document.getElementById("pendingCount").textContent = pendingUsers;
+
+                // Sync sidebar badge with the same pending count
+                const badge = document.getElementById("notificationBadge");
+                if (badge) {
+                    if (pendingUsers > 0) {
+                        badge.textContent = pendingUsers;
+                        badge.classList.remove("hidden");
+                    } else {
+                        badge.classList.add("hidden");
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading stats:", err);
+                showToast("error", "Failed to load dashboard stats");
+            }
+        }
+
+        // Load stats on page load and refresh every 30 seconds
+        loadDashboardStats();
+        setInterval(loadDashboardStats, 30000);
+    </script>
+</body>
+
+</html>
