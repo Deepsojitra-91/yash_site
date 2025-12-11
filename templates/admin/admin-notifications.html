@@ -499,11 +499,17 @@
 
                 document.getElementById("approvalModal").classList.add("hidden");
 
-                const message =
-                    `Welcome to One Trust Family!
-                Your ID: ${data.id_number}
-                Your Password: ${password}
-                Thank you!`;
+                const message = `Welcome to One Trust Family!
+
+                Your Login Details:
+                ID: ${data.id_number}
+                Password: ${password}
+
+                You can now log in securely using the link below:
+                https://www.onetrusts.in
+
+                Thank you for joining us!`;
+
 
                 document.getElementById("whatsappMessagePreview").textContent = message;
                 document.getElementById("sendWhatsAppBtn").href = data.whatsapp_url;

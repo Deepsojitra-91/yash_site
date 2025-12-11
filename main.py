@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
@@ -19,6 +19,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 app.register_blueprint(image_bp)  # NEW BLUEPRINT
 
+MAINTENANCE_MODE = False
 
 @app.route('/health')
 def health_check():
@@ -36,6 +37,13 @@ def health_check():
         }), 500
 
 
+@app.before_request
+def show_maintenance():
+    # Allow API access even in maintenance
+    if MAINTENANCE_MODE and not request.path.startswith("/api/"):
+        return render_template("maintenance.html"), 503
+    
+    
 @app.errorhandler(400)
 def bad_request(error):
     return jsonify({"detail": "Bad request"}), 400
