@@ -84,7 +84,7 @@
     const initial = document.getElementById("profileInitial");
 
     if (user.profile_pic && user.profile_pic.trim() !== '') {
-        img.src = user.profile_pic;
+        img.src = user.profile_pic;  // This is now a URL path, not base64
         img.classList.remove('hidden');
         placeholder.classList.add('hidden');
     } else {

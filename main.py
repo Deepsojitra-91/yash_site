@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from extensions import mongo
 from routes.admin_routes import admin_bp
 from routes.user_routes import user_bp
+from routes.image_routes import image_bp  
 
 load_dotenv()
 app = Flask(__name__)
@@ -13,8 +14,10 @@ CORS(app)
 
 app.config['SECRET_KEY'] = os.getenv("FLASK_SECRET_KEY", "change_this_secret_key")
 
+# Register blueprints
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
+app.register_blueprint(image_bp)  # NEW BLUEPRINT
 
 
 @app.route('/health')
@@ -48,3 +51,7 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({"detail": "Internal server error"}), 500
+
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)

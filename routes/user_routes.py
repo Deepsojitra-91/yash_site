@@ -5,6 +5,8 @@ import re
 from extensions import mongo, pwd_context, is_strong_password
 from extensions import user_login_required
 from flask import session
+from routes.image_routes import save_profile_picture
+
 
 user_bp = Blueprint('user', __name__)
 
@@ -128,6 +130,14 @@ def login():
             "mobile": user.get("mobile")
         }
 
+        # ============ CHANGED: Return path with full URL ============
+        profile_pic_path = user.get("profile_pic")
+        if profile_pic_path:
+            profile_pic_url = f"/photos/{profile_pic_path}"  # Will be served by Flask
+        else:
+            profile_pic_url = None
+        # ============================================================
+
         return jsonify({
             "message": "Login successful",
             "id_number": user.get("id_number"),
@@ -139,7 +149,7 @@ def login():
             "address": user.get("address"),
             "city": user.get("city"),
             "state": user.get("state"),
-            "profile_pic": user.get("profile_pic"),
+            "profile_pic": profile_pic_url,  # CHANGED: full URL path
             "is_approved": user.get("is_approved", False),
             "is_rejected": user.get("is_rejected", False),
             "current_level": user.get("current_level", "-"),
@@ -149,7 +159,6 @@ def login():
     except Exception as e:
         print(f"Login error: {e}")
         return jsonify({"detail": "Server error occurred."}), 500
-
 
 @user_bp.route('/api/complete-registration', methods=['POST'])
 def complete_registration():
@@ -168,17 +177,12 @@ def complete_registration():
         address = data.get('address', '').strip()
         city = data.get('city', '').strip()
         state = data.get('state', '').strip()
-        profile_pic = data.get('profile_pic')
+        profile_pic_base64 = data.get('profile_pic')  # CHANGED: renamed variable
         created_by_admin = data.get('created_by_admin', False)
         
         join_with_register = data.get('join_with_register', False)
         if isinstance(join_with_register, str):
             join_with_register = join_with_register == "1" or join_with_register.lower() == "true"
-
-        print(f"🔍 DEBUG complete_registration:")
-        print(f"   - mobile: {mobile}")
-        print(f"   - created_by_admin: {created_by_admin}")
-        print(f"   - join_with_register: {join_with_register} (type: {type(join_with_register)})")
 
         # Validate required fields
         if not all([mobile, full_name, birth_date, gender, address, city, state]):
@@ -200,21 +204,16 @@ def complete_registration():
         
         # Skip duplicate check only when join_with_register is True
         if not join_with_register:
-            print("⚠️ Checking for duplicate mobile (join_with_register is False)")
-            
             existing_user = mongo.db.users.find_one({"mobile": mobile})
             if existing_user:
-                print("❌ Duplicate mobile found! Blocking registration.")
                 return jsonify({"detail": "Mobile already registered"}), 409
 
             if email:
                 existing_email = mongo.db.users.find_one({"email": email})
                 if existing_email:
-                    print("❌ Duplicate email found! Blocking registration.")
                     return jsonify({"detail": "Email already registered"}), 409
-        else:
-            print("✅ Skipping duplicate check (join_with_register is True)")
 
+        # ============ NEW: Insert user FIRST to get ObjectId ============
         user_document = {
             "mobile": mobile,
             "full_name": full_name,
@@ -225,7 +224,7 @@ def complete_registration():
             "address": address,
             "city": city,
             "state": state,
-            "profile_pic": profile_pic,
+            "profile_pic": None,  # Will update after saving image
             "is_approved": False,  
             "is_rejected": False,
             "id_number": None,
@@ -240,7 +239,21 @@ def complete_registration():
         if not result.inserted_id:
             return jsonify({"detail": "Registration failed"}), 500
 
-        print(f"   ✅ User registered successfully! ID: {result.inserted_id}")
+        user_id = str(result.inserted_id)
+        
+        # Save profile picture using user_id as filename
+        if profile_pic_base64:
+            profile_pic_path = save_profile_picture(user_id, profile_pic_base64)
+            if profile_pic_path:
+                # Update user document with image path
+                mongo.db.users.update_one(
+                    {"_id": result.inserted_id},
+                    {"$set": {"profile_pic": profile_pic_path}}
+                )
+                print(f"✅ Profile picture saved for user: {user_id}")
+            else:
+                print(f"⚠️ Failed to save profile picture for user: {user_id}")
+        # =================================================================
 
         notification = {
             "type": "new_registration",
@@ -254,7 +267,6 @@ def complete_registration():
 
         mongo.db.notifications.insert_one(notification)
         
-        # Different messages for admin vs user registration
         if created_by_admin:
             msg = "User registration request submitted successfully! Admin will review and approve within 24-48 hours."
         else:
@@ -266,7 +278,7 @@ def complete_registration():
         }), 200
 
     except Exception as e:
-        print(f"❌ Registration error: {e}")
+        print(f"Registration error: {e}")
         return jsonify({"detail": "Server error"}), 500
     
 
@@ -354,7 +366,7 @@ def update_profile():
 
         mobile = data.get('mobile', '').strip()
         full_name = data.get('full_name', '').strip()
-        profile_pic = data.get('profile_pic')
+        profile_pic_base64 = data.get('profile_pic')
 
         if not mobile:
             return jsonify({"detail": "Mobile number is required"}), 400
@@ -362,13 +374,26 @@ def update_profile():
         if not full_name:
             return jsonify({"detail": "Full name is required"}), 400
 
+        # Find user to get their _id
+        user = mongo.db.users.find_one({"mobile": mobile})
+        if not user:
+            return jsonify({"detail": "User not found"}), 404
+
         update_data = {
             "full_name": full_name,
             "updated_at": now_ist()
         }
 
-        if profile_pic:
-            update_data["profile_pic"] = profile_pic
+        # ============ NEW: Save image using user_id ============
+        if profile_pic_base64:
+            user_id = str(user["_id"])
+            profile_pic_path = save_profile_picture(user_id, profile_pic_base64)
+            if profile_pic_path:
+                update_data["profile_pic"] = profile_pic_path
+                print(f"✅ Profile picture updated for user: {user_id}")
+            else:
+                return jsonify({"detail": "Failed to save profile picture"}), 500
+        # =======================================================
 
         result = mongo.db.users.update_one(
             {"mobile": mobile},
@@ -380,15 +405,22 @@ def update_profile():
 
         updated_user = mongo.db.users.find_one({"mobile": mobile})
 
+        profile_pic_path = updated_user.get("profile_pic")
+        if profile_pic_path:
+            profile_pic_url = f"/photos/{profile_pic_path}"
+        else:
+            profile_pic_url = None
+
         return jsonify({
             "message": "Profile updated successfully",
             "user_name": updated_user.get("full_name"),
-            "profile_pic": updated_user.get("profile_pic")
+            "profile_pic": profile_pic_url  # ✅ Now returns full URL
         }), 200
 
     except Exception as e:
         print(f"Update profile error: {e}")
         return jsonify({"detail": "Server error occurred"}), 500
+
 
 
 @user_bp.route('/api/accounts/by-mobile', methods=['GET'])
@@ -480,6 +512,14 @@ def account_by_id():
         if user.get("is_rejected"):
             return jsonify({"detail": "This account has been rejected by admin."}), 403
 
+        # ============ CHANGED: Return path with full URL ============
+        profile_pic_path = user.get("profile_pic")
+        if profile_pic_path:
+            profile_pic_url = f"/photos/{profile_pic_path}"
+        else:
+            profile_pic_url = None
+        # ============================================================
+
         return jsonify({
             "message": "Account loaded",
             "id_number": user.get("id_number"),
@@ -491,7 +531,7 @@ def account_by_id():
             "address": user.get("address"),
             "city": user.get("city"),
             "state": user.get("state"),
-            "profile_pic": user.get("profile_pic"),
+            "profile_pic": profile_pic_url,  # CHANGED: full URL path
             "is_approved": user.get("is_approved", False),
             "is_rejected": user.get("is_rejected", False),
             "current_level": user.get("current_level", "-"),

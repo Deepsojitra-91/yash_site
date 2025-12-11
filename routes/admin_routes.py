@@ -6,6 +6,7 @@ import traceback
 import os 
 from dotenv import load_dotenv
 from extensions import admin_login_required
+from routes.image_routes import save_product_image, delete_product_image
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -169,6 +170,14 @@ def get_all_users():
             )
             u["real_password"] = u.get("plain_password", "-")
             u["approval_serial"] = u.get("approval_serial", "-")
+            
+            # ============ CHANGED: Convert path to full URL ============
+            profile_pic_path = u.get("profile_pic")
+            if profile_pic_path:
+                u["profile_pic"] = f"/photos/{profile_pic_path}"
+            else:
+                u["profile_pic"] = ""
+            # ===========================================================
         
         return jsonify({"users": users}), 200
     
@@ -180,7 +189,6 @@ def get_all_users():
 @admin_bp.route("/api/admin/pending-users", methods=["GET"])
 def get_pending_users():
     try:
-
         pending_users = list(
             mongo.db.users.find({"is_approved": False, "is_rejected": False})
             .sort("created_at", -1)
@@ -188,6 +196,14 @@ def get_pending_users():
 
         for user in pending_users:
             user["_id"] = str(user["_id"])
+            
+            # ============ CHANGED: Convert path to full URL ============
+            profile_pic_path = user.get("profile_pic")
+            if profile_pic_path:
+                user["profile_pic"] = f"/photos/{profile_pic_path}"
+            else:
+                user["profile_pic"] = ""
+            # ===========================================================
 
         return jsonify({"pending_users": pending_users}), 200
 
@@ -323,7 +339,9 @@ def paginated_users():
                     )
                     u["real_password"] = u.get("plain_password", "-")
                     u["approval_serial"] = u.get("approval_serial", "-")
-                    u["profile_pic"] = u.get("profile_pic", "")
+                    profile_pic_path = u.get("profile_pic")
+                    u["profile_pic"] = f"/photos/{profile_pic_path}" if profile_pic_path else ""
+
                     result.append(u)
 
             total = mongo.db.users.count_documents(query)
@@ -354,7 +372,9 @@ def paginated_users():
             )
             u["real_password"] = u.get("plain_password", "-")
             u["approval_serial"] = u.get("approval_serial", "-")
-            u["profile_pic"] = u.get("profile_pic", "")
+            profile_pic_path = u.get("profile_pic")
+            u["profile_pic"] = f"/photos/{profile_pic_path}" if profile_pic_path else ""
+
             result.append(u)
 
         return jsonify({
@@ -393,7 +413,9 @@ def users_by_mobile_frequency():
                 else "Pending"
             )
             u["real_password"] = u.get("plain_password", "-")
-            u["profile_pic"] = u.get("profile_pic", "")
+            profile_pic_path = u.get("profile_pic")
+            u["profile_pic"] = f"/photos/{profile_pic_path}" if profile_pic_path else ""
+
 
         users.sort(key=lambda x: x["frequency"], reverse=(order == "high-low"))
 
@@ -414,6 +436,14 @@ def get_user_details(user_id):
         user["_id"] = str(user["_id"])
         id_number_preview = generate_id_number()
         user["id_number_preview"] = id_number_preview
+        
+        # ============ CHANGED: Convert path to full URL ============
+        profile_pic_path = user.get("profile_pic")
+        if profile_pic_path:
+            user["profile_pic"] = f"/photos/{profile_pic_path}"
+        else:
+            user["profile_pic"] = ""
+        # ===========================================================
 
         return jsonify({"user": user}), 200
 
@@ -553,40 +583,54 @@ def reject_user():
 @admin_login_required
 def add_product():
     try:
-        print("=== ADDING PRODUCT ===")
-
         data = request.get_json()
-        print(f"Received data: {data}")
 
         if not data:
             return jsonify({"detail": "No data provided"}), 400
 
         name = data.get("name", "").strip()
         price = data.get("price")
-        image = data.get("image")
+        image_base64 = data.get("image")  # CHANGED: renamed variable
 
-        if not name or not price or not image:
+        if not name or not price or not image_base64:
             return jsonify({"detail": "All fields are required"}), 400
 
         if price <= 0:
             return jsonify({"detail": "Price must be greater than 0"}), 400
 
+        # ============ NEW: Insert product first to get ID ============
         product_document = {
             "name": name,
             "price": float(price),
-            "image": image,
+            "image": None,  # Temporary, will update after saving image
             "created_at": now_ist()
         }
 
         result = mongo.db.products.insert_one(product_document)
-        print(f"Product inserted with ID: {result.inserted_id}")
-
+        
         if not result.inserted_id:
             return jsonify({"detail": "Failed to add product"}), 500
 
+        product_id = str(result.inserted_id)
+        
+        # Save image with product ID as filename
+        image_path = save_product_image(product_id, image_base64)
+        
+        if not image_path:
+            # Rollback: delete product if image save failed
+            mongo.db.products.delete_one({"_id": result.inserted_id})
+            return jsonify({"detail": "Failed to save product image"}), 500
+        
+        # Update product with image path
+        mongo.db.products.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"image": image_path}}
+        )
+        # =============================================================
+
         return jsonify({
             "message": "Product added successfully",
-            "product_id": str(result.inserted_id)
+            "product_id": product_id
         }), 200
 
     except Exception as e:
@@ -602,6 +646,12 @@ def get_products():
 
         for product in products:
             product["_id"] = str(product["_id"])
+            
+            # ============ CHANGED: Convert path to full URL ============
+            image_path = product.get("image")
+            if image_path:
+                product["image"] = f"/photos/{image_path}"
+            # ===========================================================
 
         return jsonify({"products": products}), 200
 
@@ -615,6 +665,13 @@ def get_products():
 @admin_login_required
 def delete_product(product_id):
     try:
+        # ============ NEW: Delete image file first ============
+        product = mongo.db.products.find_one({"_id": ObjectId(product_id)})
+        
+        if product:
+            delete_product_image(product_id)  # Delete image file
+        # ======================================================
+        
         result = mongo.db.products.delete_one({"_id": ObjectId(product_id)})
 
         if result.deleted_count == 0:
