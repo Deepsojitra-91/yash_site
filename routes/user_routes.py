@@ -9,6 +9,8 @@ from routes.image_routes import save_profile_picture
 
 
 user_bp = Blueprint('user', __name__)
+advertisement_bp = Blueprint('advertisement', __name__)
+
 
 def verify_password(plain_password: str, hashed_password: str):
     try:
@@ -97,6 +99,12 @@ def profile_details_page():
     return render_template('user/profile-details.html')
 
 
+@advertisement_bp.route('/advertisements')
+@user_login_required
+def advertisements_page():
+    return render_template('user/advertisements.html')
+
+    
 @user_bp.route('/api/login', methods=['POST'])
 def login():
     try:
@@ -541,3 +549,23 @@ def account_by_id():
     except Exception as e:
         print(f"account_by_id error: {e}")
         return jsonify({"detail": "Server error occurred"}), 500
+    
+    
+@advertisement_bp.route('/api/advertisements', methods=['GET'])
+def get_active_advertisements():
+    try:
+        ads = list(mongo.db.advertisements.find({"is_active": True}).sort("created_at", -1))
+
+        for ad in ads:
+            ad["_id"] = str(ad["_id"])
+            
+            # Convert path to full URL
+            image_path = ad.get("image")
+            if image_path:
+                ad["image"] = f"/photos/{image_path}"
+
+        return jsonify({"advertisements": ads}), 200
+
+    except Exception as e:
+        print(f"ERROR in get_active_advertisements: {str(e)}")
+        return jsonify({"detail": f"Error: {str(e)}"}), 500

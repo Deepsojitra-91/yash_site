@@ -6,9 +6,10 @@ import traceback
 import os 
 from dotenv import load_dotenv
 from extensions import admin_login_required
-from routes.image_routes import save_product_image, delete_product_image
+from routes.image_routes import save_product_image, delete_product_image, save_advertisement_image, delete_advertisement_image
 
 admin_bp = Blueprint("admin", __name__)
+admin_advertisement_bp = Blueprint('admin_advertisement', __name__)
 
 load_dotenv()
 
@@ -95,6 +96,19 @@ def admin_change_level_page():
 @admin_login_required
 def admin_notifications_page():
     return render_template("admin/admin-notifications.html")
+
+
+@admin_advertisement_bp.route('/admin-add-advertisement')
+@admin_login_required
+def admin_add_advertisement_page():
+    return render_template('admin/admin-add-advertisement.html')
+
+
+@admin_advertisement_bp.route('/admin-view-advertisements')
+@admin_login_required
+def admin_view_advertisements_page():
+    return render_template('admin/admin-view-advertisements.html')
+
 
 
 @admin_bp.route("/api/admin-login", methods=["POST"])
@@ -682,4 +696,107 @@ def delete_product(product_id):
     except Exception as e:
         print(f"ERROR in delete_product: {str(e)}")
         traceback.print_exc()
+        return jsonify({"detail": f"Error: {str(e)}"}), 500
+    
+    
+@admin_advertisement_bp.route('/api/admin/add-advertisement', methods=['POST'])
+@admin_login_required
+def add_advertisement():
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"detail": "No data provided"}), 400
+
+        title = data.get("title", "").strip()
+        contact_number = data.get("contact_number", "").strip()
+        image_base64 = data.get("image")
+
+        if not title or not contact_number or not image_base64:
+            return jsonify({"detail": "All fields are required"}), 400
+
+        # Validate contact number (10 digits)
+        if not contact_number.isdigit() or len(contact_number) != 10:
+            return jsonify({"detail": "Contact number must be 10 digits"}), 400
+
+        # Insert advertisement first to get ID
+        ad_document = {
+            "title": title,
+            "contact_number": contact_number,
+            "image": None,  # Will update after saving image
+            "created_at": now_ist(),
+            "is_active": True
+        }
+
+        result = mongo.db.advertisements.insert_one(ad_document)
+        
+        if not result.inserted_id:
+            return jsonify({"detail": "Failed to add advertisement"}), 500
+
+        ad_id = str(result.inserted_id)
+        
+        # Save image with ad ID as filename
+        image_path = save_advertisement_image(ad_id, image_base64)
+        
+        if not image_path:
+            # Rollback: delete ad if image save failed
+            mongo.db.advertisements.delete_one({"_id": result.inserted_id})
+            return jsonify({"detail": "Failed to save advertisement image"}), 500
+        
+        # Update ad with image path
+        mongo.db.advertisements.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"image": image_path}}
+        )
+
+        return jsonify({
+            "message": "Advertisement added successfully",
+            "ad_id": ad_id
+        }), 200
+
+    except Exception as e:
+        print(f"ERROR in add_advertisement: {str(e)}")
+        return jsonify({"detail": f"Error: {str(e)}"}), 500
+
+
+@admin_advertisement_bp.route('/api/admin/advertisements', methods=['GET'])
+@admin_login_required
+def get_all_advertisements():
+    try:
+        ads = list(mongo.db.advertisements.find().sort("created_at", -1))
+
+        for ad in ads:
+            ad["_id"] = str(ad["_id"])
+            
+            # Convert path to full URL
+            image_path = ad.get("image")
+            if image_path:
+                ad["image"] = f"/photos/{image_path}"
+
+        return jsonify({"advertisements": ads}), 200
+
+    except Exception as e:
+        print(f"ERROR in get_all_advertisements: {str(e)}")
+        return jsonify({"detail": f"Error: {str(e)}"}), 500
+
+
+@admin_advertisement_bp.route('/api/admin/delete-advertisement/<ad_id>', methods=['DELETE'])
+@admin_login_required
+def delete_advertisement(ad_id):
+    try:
+        # Get ad to delete image file
+        ad = mongo.db.advertisements.find_one({"_id": ObjectId(ad_id)})
+        
+        if ad:
+            delete_advertisement_image(ad_id)  # Delete image file
+        
+        result = mongo.db.advertisements.delete_one({"_id": ObjectId(ad_id)})
+
+        if result.deleted_count == 0:
+            return jsonify({"detail": "Advertisement not found"}), 404
+
+        return jsonify({"message": "Advertisement deleted successfully"}), 200
+
+    except Exception as e:
+        print(f"ERROR in delete_advertisement: {str(e)}")
         return jsonify({"detail": f"Error: {str(e)}"}), 500

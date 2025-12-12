@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Add Advertisement</title>
+    {% include 'admin/partials/head.html' %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        .crop-container {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            margin: 0 auto;
+            background: #f1f5f9;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'admin/partials/mobile-menu.html' %}
+    {% include 'admin/partials/sidebar.html' %}
+
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-3xl">
+            <h2 class="text-4xl font-bold mb-6 text-center">Add New Advertisement</h2>
+
+            <div class="bg-white text-slate-900 rounded-xl p-8">
+                <form id="addAdForm" class="space-y-6">
+
+                    <!-- Image Upload Section -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-3">Advertisement Image</label>
+                        <div id="imagePreviewSection" class="hidden mb-4">
+                            <p class="text-sm text-slate-600 mb-2">Preview:</p>
+                            <div class="w-full max-w-md border-4 border-indigo-400 rounded-xl overflow-hidden">
+                                <img id="adImagePreview" class="w-full h-auto object-cover">
+                            </div>
+                        </div>
+                        <div id="cropperSection" class="hidden mb-4">
+                            <div class="crop-container mb-4">
+                                <img id="cropImage" class="hidden">
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <button type="button" id="zoomIn"
+                                    class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Zoom
+                                    In</button>
+                                <button type="button" id="zoomOut"
+                                    class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Zoom
+                                    Out</button>
+                                <button type="button" id="rotateImage"
+                                    class="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600">Rotate</button>
+                                <button type="button" id="cancelCrop"
+                                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Cancel</button>
+                                <button type="button" id="applyCrop"
+                                    class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Apply
+                                    Crop</button>
+                            </div>
+                        </div>
+                        <input type="file" id="adImage" accept="image/*" class="hidden">
+                        <button type="button" id="chooseImageBtn"
+                            class="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-300 font-medium">Choose
+                            Advertisement Image</button>
+                    </div>
+
+                    <!-- Title -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Advertisement Title</label>
+                        <input type="text" id="adTitle" required
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+                            placeholder="Enter advertisement title">
+                    </div>
+
+                    <!-- Contact Number -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Contact Number (WhatsApp)</label>
+                        <input type="tel" id="adContact" required maxlength="10"
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+                            placeholder="Enter 10-digit mobile number">
+                        <p class="text-xs text-slate-500 mt-1">Users will contact via WhatsApp on this number</p>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="adError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                        <p class="text-red-700 text-sm font-medium"></p>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div id="adSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                        <p class="text-green-700 text-sm font-medium">Advertisement added successfully!</p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submitAdBtn"
+                        class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg">Add
+                        Advertisement</button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    {% include 'admin/partials/toast.html' %}
+    {% include 'admin/partials/confirm-modal.html' %}
+
+    {% include 'admin/partials/scripts.html' %}
+
+    <script>
+        let cropper = null;
+        let croppedAdImage = null;
+
+        document.getElementById("chooseImageBtn").onclick = () => {
+            document.getElementById("adImage").click();
+        };
+
+        document.getElementById("adImage").onchange = function () {
+            const file = this.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert("Please select an image file");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                alert("Image size must be less than 5MB");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById("cropperSection").classList.remove("hidden");
+                document.getElementById("imagePreviewSection").classList.add("hidden");
+                const cropImage = document.getElementById("cropImage");
+                cropImage.src = e.target.result;
+                cropImage.classList.remove("hidden");
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: 3 / 4,  // Wide format for ads
+                    viewMode: 1,
+                    dragMode: 'move',
+                    background: false,
+                    autoCropArea: 1,
+                    responsive: true
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.getElementById("zoomIn").onclick = () => cropper?.zoom(0.1);
+        document.getElementById("zoomOut").onclick = () => cropper?.zoom(-0.1);
+        document.getElementById("rotateImage").onclick = () => cropper?.rotate(90);
+        document.getElementById("cancelCrop").onclick = () => {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            document.getElementById("cropperSection").classList.add("hidden");
+            document.getElementById("adImage").value = "";
+            croppedAdImage = null;
+        };
+
+        document.getElementById("applyCrop").onclick = () => {
+            if (!cropper) return;
+            const canvas = cropper.getCroppedCanvas({
+                width: 600,
+                height: 800,
+                imageSmoothingQuality: 'high'
+            });
+            croppedAdImage = canvas.toDataURL('image/png');
+            document.getElementById("adImagePreview").src = croppedAdImage;
+            document.getElementById("imagePreviewSection").classList.remove("hidden");
+            document.getElementById("cropperSection").classList.add("hidden");
+            cropper.destroy();
+            cropper = null;
+        };
+
+        document.getElementById("addAdForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const title = document.getElementById("adTitle").value.trim();
+            const contact = document.getElementById("adContact").value.trim();
+            const errorEl = document.getElementById("adError");
+            const successEl = document.getElementById("adSuccess");
+            const btn = document.getElementById("submitAdBtn");
+
+            errorEl.classList.add("hidden");
+            successEl.classList.add("hidden");
+
+            if (!croppedAdImage) {
+                errorEl.querySelector('p').textContent = "Please upload an advertisement image";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            if (!title || !contact) {
+                errorEl.querySelector('p').textContent = "Please fill all fields";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            if (!/^\d{10}$/.test(contact)) {
+                errorEl.querySelector('p').textContent = "Contact number must be exactly 10 digits";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Adding Advertisement...";
+
+            try {
+                const res = await fetch('/api/admin/add-advertisement', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        contact_number: contact,
+                        image: croppedAdImage
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorEl.querySelector('p').textContent = data.detail;
+                    errorEl.classList.remove("hidden");
+                    return;
+                }
+
+                successEl.classList.remove("hidden");
+                document.getElementById("addAdForm").reset();
+                document.getElementById("imagePreviewSection").classList.add("hidden");
+                croppedAdImage = null;
+                setTimeout(() => successEl.classList.add("hidden"), 3000);
+            } catch (err) {
+                errorEl.querySelector('p').textContent = "Network error. Please try again.";
+                errorEl.classList.remove("hidden");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Add Advertisement";
+            }
+        };
+    </script>
+</body>
+
+</html>

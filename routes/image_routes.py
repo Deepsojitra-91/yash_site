@@ -12,14 +12,18 @@ import io
 
 image_bp = Blueprint('image', __name__)
 
+
 # Define base paths
 PHOTOS_DIR = os.path.join(os.getcwd(), 'photos')
 PROFILE_PIC_DIR = os.path.join(PHOTOS_DIR, 'profile_pic')
 PRODUCTS_DIR = os.path.join(PHOTOS_DIR, 'products')
+ADVERTISEMENTS_DIR = os.path.join(PHOTOS_DIR, 'advertisements')
+
 
 # Ensure directories exist
 os.makedirs(PROFILE_PIC_DIR, exist_ok=True)
 os.makedirs(PRODUCTS_DIR, exist_ok=True)
+os.makedirs(ADVERTISEMENTS_DIR, exist_ok=True)
 
 # Allowed extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
@@ -196,3 +200,41 @@ def check_product_exists(product_id):
         "exists": exists,
         "path": f"/photos/products/{product_id}.png" if exists else None
     })
+    
+    
+def save_advertisement_image(ad_id, base64_image):
+    """Save advertisement image"""
+    if not base64_image or not ad_id:
+        return None
+    
+    # Create filename: ad_id.png
+    filename = f"{ad_id}.png"
+    save_path = os.path.join(ADVERTISEMENTS_DIR, filename)
+    
+    # Save image
+    if save_base64_image(base64_image, save_path, max_size=(1200, 800)):
+        return f"advertisements/{filename}"
+    
+    return None
+
+
+def delete_advertisement_image(ad_id):
+    """Delete advertisement image for given ad ID"""
+    try:
+        filepath = os.path.join(ADVERTISEMENTS_DIR, f"{ad_id}.png")
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return True
+    except Exception as e:
+        print(f"Error deleting advertisement image: {e}")
+    return False
+
+
+@image_bp.route('/photos/advertisements/<filename>')
+def serve_advertisement_image(filename):
+    """Serve advertisement image"""
+    try:
+        return send_from_directory(ADVERTISEMENTS_DIR, filename)
+    except Exception as e:
+        print(f"Error serving advertisement image: {e}")
+        return jsonify({"detail": "Image not found"}), 404
