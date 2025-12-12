@@ -9,8 +9,8 @@
     <style>
         .crop-container {
             width: 100%;
-            max-width: 600px;
-            height: 400px;
+            max-width: 500px;
+            height: 350px;
             margin: 0 auto;
             background: #f1f5f9;
             border-radius: 12px;
@@ -23,93 +23,101 @@
     {% include 'admin/partials/mobile-menu.html' %}
     {% include 'admin/partials/sidebar.html' %}
 
-    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen flex items-center justify-center">
-        <div class="w-full max-w-3xl">
-            <h2 class="text-4xl font-bold mb-6 text-center">Add New Advertisement</h2>
-
-            <div class="bg-white text-slate-900 rounded-xl p-8">
-                <form id="addAdForm" class="space-y-6">
-
-                    <!-- Image Upload Section -->
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-3">Advertisement Image</label>
-                        <div id="imagePreviewSection" class="hidden mb-4">
-                            <p class="text-sm text-slate-600 mb-2">Preview:</p>
-                            <div class="w-full max-w-md border-4 border-indigo-400 rounded-xl overflow-hidden">
-                                <img id="adImagePreview" class="w-full h-auto object-cover">
-                            </div>
+    <main class="lg:ml-80 p-6 md:p-10 text-white min-h-screen">
+        <h2 class="text-2xl font-bold mb-6 mt-10 lg:mt-0">Add New Advertisement</h2>
+        <div class="bg-white text-slate-900 rounded-xl p-8 max-w-3xl">
+            <form id="addAdForm" class="space-y-6">
+                
+                <!-- Image Upload Section -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-3">Advertisement Image</label>
+                    <div id="imagePreviewSection" class="hidden mb-4">
+                        <p class="text-sm text-slate-600 mb-2">Preview:</p>
+                        <div class="w-full max-w-md h-64 border-4 border-purple-400 rounded-xl overflow-hidden">
+                            <img id="adImagePreview" class="w-full h-full object-cover">
                         </div>
-                        <div id="cropperSection" class="hidden mb-4">
-                            <div class="crop-container mb-4">
-                                <img id="cropImage" class="hidden">
-                            </div>
-                            <div class="flex flex-wrap gap-3">
-                                <button type="button" id="zoomIn"
-                                    class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Zoom
-                                    In</button>
-                                <button type="button" id="zoomOut"
-                                    class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Zoom
-                                    Out</button>
-                                <button type="button" id="rotateImage"
-                                    class="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600">Rotate</button>
-                                <button type="button" id="cancelCrop"
-                                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Cancel</button>
-                                <button type="button" id="applyCrop"
-                                    class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Apply
-                                    Crop</button>
-                            </div>
+                    </div>
+                    <div id="cropperSection" class="hidden mb-4">
+                        <div class="crop-container mb-4">
+                            <img id="cropImage" class="hidden">
                         </div>
-                        <input type="file" id="adImage" accept="image/*" class="hidden">
-                        <button type="button" id="chooseImageBtn"
-                            class="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-300 font-medium">Choose
-                            Advertisement Image</button>
+                        <div class="flex flex-wrap gap-3">
+                            <button type="button" id="zoomIn"
+                                class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">Zoom In</button>
+                            <button type="button" id="zoomOut"
+                                class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">Zoom Out</button>
+                            <button type="button" id="rotateImage"
+                                class="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600">Rotate</button>
+                            <button type="button" id="cancelCrop"
+                                class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Cancel</button>
+                            <button type="button" id="applyCrop"
+                                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Apply Crop</button>
+                        </div>
                     </div>
+                    <input type="file" id="adImage" accept="image/*" class="hidden">
+                    <button type="button" id="chooseImageBtn"
+                        class="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-300 font-medium">
+                        Choose Advertisement Image
+                    </button>
+                </div>
 
-                    <!-- Title -->
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Advertisement Title</label>
-                        <input type="text" id="adTitle" required
-                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
-                            placeholder="Enter advertisement title">
-                    </div>
+                <!-- Title -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Advertisement Title</label>
+                    <input type="text" id="adTitle" required maxlength="100"
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none"
+                        placeholder="Enter advertisement title">
+                </div>
 
-                    <!-- Contact Number -->
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Contact Number (WhatsApp)</label>
-                        <input type="tel" id="adContact" required maxlength="10"
-                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
-                            placeholder="Enter 10-digit mobile number">
-                        <p class="text-xs text-slate-500 mt-1">Users will contact via WhatsApp on this number</p>
-                    </div>
+                <!-- Description (NEW) -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Description (max 500 characters)</label>
+                    <textarea id="adDescription" required maxlength="500" rows="4"
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none resize-none"
+                        placeholder="Enter advertisement description..."></textarea>
+                    <p class="text-xs text-slate-500 mt-1">
+                        <span id="charCount">0</span>/500 characters
+                    </p>
+                </div>
 
-                    <!-- Error Message -->
-                    <div id="adError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
-                        <p class="text-red-700 text-sm font-medium"></p>
-                    </div>
+                <!-- Contact Number -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Contact Number</label>
+                    <input type="tel" id="adContact" required maxlength="10"
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none"
+                        placeholder="Enter 10-digit contact number">
+                </div>
 
-                    <!-- Success Message -->
-                    <div id="adSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-3 rounded">
-                        <p class="text-green-700 text-sm font-medium">Advertisement added successfully!</p>
-                    </div>
+                <!-- Error/Success Messages -->
+                <div id="adError" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                    <p class="text-red-700 text-sm font-medium"></p>
+                </div>
+                <div id="adSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                    <p class="text-green-700 text-sm font-medium">Advertisement added successfully!</p>
+                </div>
 
-                    <!-- Submit Button -->
-                    <button type="submit" id="submitAdBtn"
-                        class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg">Add
-                        Advertisement</button>
-                </form>
-            </div>
+                <!-- Submit Button -->
+                <button type="submit" id="submitAdBtn"
+                    class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-lg">
+                    Add Advertisement
+                </button>
+            </form>
         </div>
-
     </main>
 
     {% include 'admin/partials/toast.html' %}
     {% include 'admin/partials/confirm-modal.html' %}
-
     {% include 'admin/partials/scripts.html' %}
 
     <script>
         let cropper = null;
         let croppedAdImage = null;
+
+        // Character counter for description
+        document.getElementById("adDescription").addEventListener("input", function() {
+            const count = this.value.length;
+            document.getElementById("charCount").textContent = count;
+        });
 
         document.getElementById("chooseImageBtn").onclick = () => {
             document.getElementById("adImage").click();
@@ -135,7 +143,7 @@
                 cropImage.classList.remove("hidden");
                 if (cropper) cropper.destroy();
                 cropper = new Cropper(cropImage, {
-                    aspectRatio: 3 / 4,  // Wide format for ads
+                    aspectRatio: 16 / 9,
                     viewMode: 1,
                     dragMode: 'move',
                     background: false,
@@ -162,8 +170,8 @@
         document.getElementById("applyCrop").onclick = () => {
             if (!cropper) return;
             const canvas = cropper.getCroppedCanvas({
-                width: 600,
-                height: 800,
+                width: 1200,
+                height: 675,
                 imageSmoothingQuality: 'high'
             });
             croppedAdImage = canvas.toDataURL('image/png');
@@ -177,6 +185,7 @@
         document.getElementById("addAdForm").onsubmit = async (e) => {
             e.preventDefault();
             const title = document.getElementById("adTitle").value.trim();
+            const description = document.getElementById("adDescription").value.trim();
             const contact = document.getElementById("adContact").value.trim();
             const errorEl = document.getElementById("adError");
             const successEl = document.getElementById("adSuccess");
@@ -191,14 +200,14 @@
                 return;
             }
 
-            if (!title || !contact) {
+            if (!title || !description || !contact) {
                 errorEl.querySelector('p').textContent = "Please fill all fields";
                 errorEl.classList.remove("hidden");
                 return;
             }
 
             if (!/^\d{10}$/.test(contact)) {
-                errorEl.querySelector('p').textContent = "Contact number must be exactly 10 digits";
+                errorEl.querySelector('p').textContent = "Contact number must be 10 digits";
                 errorEl.classList.remove("hidden");
                 return;
             }
@@ -212,6 +221,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         title: title,
+                        description: description,
                         contact_number: contact,
                         image: croppedAdImage
                     })
@@ -228,6 +238,7 @@
                 successEl.classList.remove("hidden");
                 document.getElementById("addAdForm").reset();
                 document.getElementById("imagePreviewSection").classList.add("hidden");
+                document.getElementById("charCount").textContent = "0";
                 croppedAdImage = null;
                 setTimeout(() => successEl.classList.add("hidden"), 3000);
             } catch (err) {

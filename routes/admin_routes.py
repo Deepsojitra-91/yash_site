@@ -709,21 +709,25 @@ def add_advertisement():
             return jsonify({"detail": "No data provided"}), 400
 
         title = data.get("title", "").strip()
+        description = data.get("description", "").strip()  # ✅ ADDED
         contact_number = data.get("contact_number", "").strip()
         image_base64 = data.get("image")
 
-        if not title or not contact_number or not image_base64:
+        # ✅ VALIDATION FOR DESCRIPTION
+        if not title or not description or not contact_number or not image_base64:
             return jsonify({"detail": "All fields are required"}), 400
 
-        # Validate contact number (10 digits)
+        if len(description) > 500:
+            return jsonify({"detail": "Description must be 500 characters or less"}), 400
+
         if not contact_number.isdigit() or len(contact_number) != 10:
             return jsonify({"detail": "Contact number must be 10 digits"}), 400
 
-        # Insert advertisement first to get ID
         ad_document = {
             "title": title,
+            "description": description,  # ✅ ADDED
             "contact_number": contact_number,
-            "image": None,  # Will update after saving image
+            "image": None,
             "created_at": now_ist(),
             "is_active": True
         }
@@ -735,15 +739,12 @@ def add_advertisement():
 
         ad_id = str(result.inserted_id)
         
-        # Save image with ad ID as filename
         image_path = save_advertisement_image(ad_id, image_base64)
         
         if not image_path:
-            # Rollback: delete ad if image save failed
             mongo.db.advertisements.delete_one({"_id": result.inserted_id})
             return jsonify({"detail": "Failed to save advertisement image"}), 500
         
-        # Update ad with image path
         mongo.db.advertisements.update_one(
             {"_id": result.inserted_id},
             {"$set": {"image": image_path}}
