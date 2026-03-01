@@ -223,6 +223,7 @@
                 <th class="border border-black px-3 py-2">Upcoming Level</th>
                 <th class="border border-black px-3 py-2">Password</th>
                 <th class="border border-black px-3 py-2">Status</th>
+                <th class="border border-black px-3 py-2">Approved At</th>
                 <th class="border border-black px-3 py-2">View Details</th>
             </tr>
         `;
@@ -267,6 +268,9 @@
                     }">
                             ${u.status || '-'}
                         </span>
+                    </td>
+                    <td class="border border-black px-3 py-2 text-center">
+                        ${u.approved_at ? new Date(u.approved_at).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' }) : '-'}
                     </td>
                     <td class="border border-black px-3 py-2 text-center">
                         <button class="view-data-btn p-2 bg-blue-100 rounded-full hover:bg-blue-200 transition" 
