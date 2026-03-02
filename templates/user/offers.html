@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Offers</title>
+    {% include 'user/partials/head.html' %}
+</head>
+
+<body class="gradient-bg min-h-screen">
+    {% include 'user/partials/mobile-menu.html' %}
+    {% include 'user/partials/sidebar.html' %}
+
+    <main class="lg:ml-64 p-6 md:p-10 text-white min-h-screen">
+        <h2 class="text-2xl font-bold mb-6 mt-10 lg:mt-0">Latest Offers</h2>
+
+        <div id="offersLoading" class="text-center py-10">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+            <p class="mt-4">Loading offers...</p>
+        </div>
+
+        <div id="offersGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+
+        <div id="noOffers" class="hidden bg-white text-slate-900 rounded-xl p-8 text-center max-w-md mx-auto">
+            <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            <h3 class="text-xl font-bold mb-2">No Offers Available</h3>
+            <p class="text-slate-600">Check back later for new offers</p>
+        </div>
+    </main>
+
+    <!-- Full-Image Modal -->
+    <div id="offerModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+        <div class="relative max-w-4xl w-full">
+            <button id="closeOfferModal"
+                class="absolute -top-10 right-0 text-white hover:text-slate-300 transition-colors">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <img id="modalOfferImage" src="" alt="Offer"
+                class="w-full h-auto max-h-[85vh] object-contain rounded-xl shadow-2xl">
+        </div>
+    </div>
+
+    {% include 'user/partials/toast.html' %}
+    {% include 'user/partials/confirm-modal.html' %}
+    {% include 'user/partials/whatsapp-button.html' %}
+    {% include 'user/partials/scripts.html' %}
+
+    <script>
+        const offerModal = document.getElementById("offerModal");
+        const closeOfferModalBtn = document.getElementById("closeOfferModal");
+        const modalOfferImage = document.getElementById("modalOfferImage");
+
+        function openOfferModal(imageUrl) {
+            modalOfferImage.src = imageUrl;
+            offerModal.classList.remove("hidden");
+        }
+
+        function closeOfferModal() {
+            offerModal.classList.add("hidden");
+            modalOfferImage.src = "";
+        }
+
+        closeOfferModalBtn.onclick = closeOfferModal;
+
+        offerModal.addEventListener("click", (e) => {
+            if (e.target === offerModal) closeOfferModal();
+        });
+
+        async function loadOffers() {
+            const grid = document.getElementById("offersGrid");
+            const loading = document.getElementById("offersLoading");
+            const noOffers = document.getElementById("noOffers");
+
+            loading.classList.remove("hidden");
+            grid.innerHTML = "";
+            noOffers.classList.add("hidden");
+
+            try {
+                const res = await fetch('/api/offers');
+                const data = await res.json();
+
+                loading.classList.add("hidden");
+
+                if (!data.offers || data.offers.length === 0) {
+                    noOffers.classList.remove("hidden");
+                    return;
+                }
+
+                data.offers.forEach(offer => {
+                    const card = document.createElement("div");
+                    card.className = "bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all cursor-pointer group";
+
+                    card.innerHTML = `
+                        <div class="relative w-full bg-slate-100">
+                            <img src="${offer.image}" alt="Offer"
+                                class="w-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                <svg class="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                </svg>
+                            </div>
+                        </div>
+                    `;
+
+                    card.onclick = () => openOfferModal(offer.image);
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                loading.classList.add("hidden");
+                console.error("Error loading offers:", err);
+                showToast("error", "Failed to load offers");
+            }
+        }
+
+        loadOffers();
+    </script>
+</body>
+
+</html>

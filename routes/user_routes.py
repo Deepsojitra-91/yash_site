@@ -10,6 +10,7 @@ from routes.image_routes import save_profile_picture
 
 user_bp = Blueprint('user', __name__)
 advertisement_bp = Blueprint('advertisement', __name__)
+offers_bp = Blueprint('offers', __name__)
 
 
 def verify_password(plain_password: str, hashed_password: str):
@@ -568,4 +569,30 @@ def get_active_advertisements():
 
     except Exception as e:
         print(f"ERROR in get_active_advertisements: {str(e)}")
+        return jsonify({"detail": f"Error: {str(e)}"}), 500
+
+
+# ==================== OFFERS ====================
+
+@offers_bp.route('/offers')
+@user_login_required
+def offers_page():
+    return render_template('user/offers.html')
+
+
+@offers_bp.route('/api/offers', methods=['GET'])
+def get_active_offers():
+    try:
+        offers = list(mongo.db.offers.find({"is_active": True}).sort("created_at", -1))
+
+        for offer in offers:
+            offer["_id"] = str(offer["_id"])
+            image_path = offer.get("image")
+            if image_path:
+                offer["image"] = f"/photos/{image_path}"
+
+        return jsonify({"offers": offers}), 200
+
+    except Exception as e:
+        print(f"ERROR in get_active_offers: {str(e)}")
         return jsonify({"detail": f"Error: {str(e)}"}), 500

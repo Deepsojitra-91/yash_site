@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 
 # Local imports
 from extensions import mongo
-from routes.admin_routes import admin_bp, admin_advertisement_bp
-from routes.user_routes import advertisement_bp
+from routes.admin_routes import admin_bp, admin_advertisement_bp, admin_offer_bp
+from routes.user_routes import advertisement_bp, offers_bp
 from routes.user_routes import user_bp
 from routes.image_routes import image_bp
 
@@ -24,6 +24,8 @@ def create_app():
     app.register_blueprint(image_bp)
     app.register_blueprint(advertisement_bp)
     app.register_blueprint(admin_advertisement_bp)
+    app.register_blueprint(admin_offer_bp)
+    app.register_blueprint(offers_bp)
 
     MAINTENANCE_MODE = False
 

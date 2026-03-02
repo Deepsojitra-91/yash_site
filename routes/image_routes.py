@@ -18,12 +18,14 @@ PHOTOS_DIR = os.path.join(os.getcwd(), 'photos')
 PROFILE_PIC_DIR = os.path.join(PHOTOS_DIR, 'profile_pic')
 PRODUCTS_DIR = os.path.join(PHOTOS_DIR, 'products')
 ADVERTISEMENTS_DIR = os.path.join(PHOTOS_DIR, 'advertisements')
+OFFERS_DIR = os.path.join(PHOTOS_DIR, 'offers')
 
 
 # Ensure directories exist
 os.makedirs(PROFILE_PIC_DIR, exist_ok=True)
 os.makedirs(PRODUCTS_DIR, exist_ok=True)
 os.makedirs(ADVERTISEMENTS_DIR, exist_ok=True)
+os.makedirs(OFFERS_DIR, exist_ok=True)
 
 # Allowed extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
@@ -237,4 +239,40 @@ def serve_advertisement_image(filename):
         return send_from_directory(ADVERTISEMENTS_DIR, filename)
     except Exception as e:
         print(f"Error serving advertisement image: {e}")
+        return jsonify({"detail": "Image not found"}), 404
+
+
+def save_offer_image(offer_id, base64_image):
+    """Save offer image"""
+    if not base64_image or not offer_id:
+        return None
+
+    filename = f"{offer_id}.png"
+    save_path = os.path.join(OFFERS_DIR, filename)
+
+    if save_base64_image(base64_image, save_path, max_size=(1200, 800)):
+        return f"offers/{filename}"
+
+    return None
+
+
+def delete_offer_image(offer_id):
+    """Delete offer image for given offer ID"""
+    try:
+        filepath = os.path.join(OFFERS_DIR, f"{offer_id}.png")
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return True
+    except Exception as e:
+        print(f"Error deleting offer image: {e}")
+    return False
+
+
+@image_bp.route('/photos/offers/<filename>')
+def serve_offer_image(filename):
+    """Serve offer image"""
+    try:
+        return send_from_directory(OFFERS_DIR, filename)
+    except Exception as e:
+        print(f"Error serving offer image: {e}")
         return jsonify({"detail": "Image not found"}), 404

@@ -6,10 +6,11 @@ import traceback
 import os 
 from dotenv import load_dotenv
 from extensions import admin_login_required
-from routes.image_routes import save_product_image, delete_product_image, save_advertisement_image, delete_advertisement_image
+from routes.image_routes import save_product_image, delete_product_image, save_advertisement_image, delete_advertisement_image, save_offer_image, delete_offer_image
 
 admin_bp = Blueprint("admin", __name__)
 admin_advertisement_bp = Blueprint('admin_advertisement', __name__)
+admin_offer_bp = Blueprint('admin_offer', __name__)
 
 load_dotenv()
 
@@ -800,4 +801,106 @@ def delete_advertisement(ad_id):
 
     except Exception as e:
         print(f"ERROR in delete_advertisement: {str(e)}")
+        return jsonify({"detail": f"Error: {str(e)}"}), 500
+
+
+# ==================== OFFERS ====================
+
+@admin_offer_bp.route('/admin-add-offer')
+@admin_login_required
+def admin_add_offer_page():
+    return render_template('admin/admin-add-offer.html')
+
+
+@admin_offer_bp.route('/admin-view-offers')
+@admin_login_required
+def admin_view_offers_page():
+    return render_template('admin/admin-view-offers.html')
+
+
+@admin_offer_bp.route('/api/admin/add-offer', methods=['POST'])
+@admin_login_required
+def add_offer():
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"detail": "No data provided"}), 400
+
+        image_base64 = data.get("image")
+
+        if not image_base64:
+            return jsonify({"detail": "Image is required"}), 400
+
+        offer_document = {
+            "image": None,
+            "created_at": now_ist(),
+            "is_active": True
+        }
+
+        result = mongo.db.offers.insert_one(offer_document)
+
+        if not result.inserted_id:
+            return jsonify({"detail": "Failed to add offer"}), 500
+
+        offer_id = str(result.inserted_id)
+
+        image_path = save_offer_image(offer_id, image_base64)
+
+        if not image_path:
+            mongo.db.offers.delete_one({"_id": result.inserted_id})
+            return jsonify({"detail": "Failed to save offer image"}), 500
+
+        mongo.db.offers.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"image": image_path}}
+        )
+
+        return jsonify({
+            "message": "Offer added successfully",
+            "offer_id": offer_id
+        }), 200
+
+    except Exception as e:
+        print(f"ERROR in add_offer: {str(e)}")
+        return jsonify({"detail": f"Error: {str(e)}"}), 500
+
+
+@admin_offer_bp.route('/api/admin/offers', methods=['GET'])
+@admin_login_required
+def get_all_offers():
+    try:
+        offers = list(mongo.db.offers.find().sort("created_at", -1))
+
+        for offer in offers:
+            offer["_id"] = str(offer["_id"])
+            image_path = offer.get("image")
+            if image_path:
+                offer["image"] = f"/photos/{image_path}"
+
+        return jsonify({"offers": offers}), 200
+
+    except Exception as e:
+        print(f"ERROR in get_all_offers: {str(e)}")
+        return jsonify({"detail": f"Error: {str(e)}"}), 500
+
+
+@admin_offer_bp.route('/api/admin/delete-offer/<offer_id>', methods=['DELETE'])
+@admin_login_required
+def delete_offer(offer_id):
+    try:
+        offer = mongo.db.offers.find_one({"_id": ObjectId(offer_id)})
+
+        if offer:
+            delete_offer_image(offer_id)
+
+        result = mongo.db.offers.delete_one({"_id": ObjectId(offer_id)})
+
+        if result.deleted_count == 0:
+            return jsonify({"detail": "Offer not found"}), 404
+
+        return jsonify({"message": "Offer deleted successfully"}), 200
+
+    except Exception as e:
+        print(f"ERROR in delete_offer: {str(e)}")
         return jsonify({"detail": f"Error: {str(e)}"}), 500
